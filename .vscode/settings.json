@@ -1,0 +1,9 @@
+{
+    "terminal.integrated.defaultProfile.linux": "tmux",
+    "terminal.integrated.profiles.linux": {
+        "tmux": {
+            "path": "bash",
+            "args": ["-c", "tmux attach -t claude-idea 2>/dev/null || tmux new -s claude-idea; tmux set -g mouse on"]
+        }
+    }
+}
