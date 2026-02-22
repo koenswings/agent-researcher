@@ -1,0 +1,52 @@
+{
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "anthropic/claude-sonnet-4-6"
+      }
+    },
+    "list": [
+      {
+        "id": "engine-dev",
+        "workspace": "/home/node/workspace/engine",
+        "sandbox": { "mode": "all", "scope": "agent" }
+      },
+      {
+        "id": "console-dev",
+        "workspace": "/home/node/workspace/console-ui",
+        "sandbox": { "mode": "all", "scope": "agent" }
+      },
+      {
+        "id": "site-dev",
+        "workspace": "/home/node/workspace/website",
+        "sandbox": { "mode": "all", "scope": "agent" }
+      },
+      {
+        "id": "quality-manager",
+        "workspace": "/home/node/workspace/hq/quality-manager",
+        "sandbox": { "mode": "all", "scope": "agent" }
+      },
+      {
+        "id": "teacher",
+        "workspace": "/home/node/workspace/hq/teacher",
+        "sandbox": { "mode": "all", "scope": "agent" }
+      },
+      {
+        "id": "fundraising",
+        "workspace": "/home/node/workspace/hq/fundraising",
+        "sandbox": { "mode": "all", "scope": "agent" }
+      },
+      {
+        "id": "communications",
+        "workspace": "/home/node/workspace/hq/communications",
+        "sandbox": { "mode": "all", "scope": "agent" }
+      }
+    ]
+  },
+  "gateway": {
+    "remote": {
+      "token": "<GATEWAY_TOKEN — copy from existing openclaw.json>"
+    },
+    "trustedProxies": ["127.0.0.1"]
+  }
+}
