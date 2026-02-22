@@ -230,6 +230,108 @@ Visibility into Pi health (CPU, memory, temperature, disk usage) — relevant fo
 
 ---
 
+## Mission Control — An Alternative Operating Layer
+
+[openclaw-mission-control](https://github.com/abhi1693/openclaw-mission-control) is a purpose-built
+dashboard for running OpenClaw at team scale. It adds a Kanban board, structured task dispatch,
+real-time agent monitoring, and built-in approval flows on top of the OpenClaw gateway. It runs as
+a Next.js application (port 4000), connects to the OpenClaw gateway via WebSocket (port 18789),
+persists state in SQLite, and deploys as a Docker container. The project is under active development
+— production-grade architecture, but expect occasional breaking changes.
+
+### What Changes in the Setup
+
+**Additions:**
+- Mission Control runs as an additional Docker container alongside OpenClaw, added to `compose.yaml`
+- A bearer token (`LOCAL_AUTH_TOKEN`, minimum 50 characters) links it to the OpenClaw gateway
+- A one-time board hierarchy is configured in the MC UI: **IDEA org → Board Groups (Engineering, HQ)
+  → Boards per agent or project → Tasks** (the backlog items)
+- A second Tailscale-accessible URL for the MC UI (e.g. `https://openclaw-pi.tail2d60.ts.net:4000`)
+
+**Unchanged:**
+- `openclaw.json` — agent config, workspaces, plan mode, and sandbox settings are untouched
+- `AGENTS.md` files — role definitions are unaffected
+- Sandbox files — IDENTITY, SOUL, USER, TOOLS, HEARTBEAT, BOOTSTRAP are unaffected
+- The HQ directory structure on disk
+
+**Retired:**
+- `hq/BACKLOG.md` as the live task view — the MC Kanban board replaces it. BACKLOG.md could be
+  kept as a git-native audit log or retired entirely once MC is the source of truth.
+
+### What Changes in Daily Operations
+
+**Task dispatch moves to the Kanban board.** Instead of opening an agent's chat tab and typing
+"pick the next backlog item", you create a task in MC and assign it to the relevant agent. The board
+columns — Planning → Inbox → Assigned → In Progress → Review → Done — give a single-screen view of
+all 7 agents' work simultaneously.
+
+**Plan approval still happens in individual agent tabs.** Mission Control dispatches work, but
+`DEFAULT_PERMISSION_MODE=plan` is unchanged. After assigning a task, you go to that agent's chat
+tab to read and approve its plan before anything executes. MC does not replace this layer.
+
+**The activity timeline partially replaces the standup script.** MC provides a real-time SSE-fed
+activity log across all agents. The morning standup becomes a scan of that timeline rather than
+triggering a script to generate `hq/standups/YYYY-MM-DD-morning.md`. The standup script can still
+run if a written record is preferred.
+
+**The proposal/PR flow is unchanged.** MC tasks are the implementation-level view. The GitHub
+PR-based proposal and review process remains the approval layer for finished work.
+
+### Revised CEO Tool Stack
+
+| Tool | Purpose | When you use it |
+|------|---------|-----------------|
+| **Mission Control** | Live Kanban across all 7 agents; task creation and assignment; activity timeline | Daily — primary dispatch surface |
+| **Individual agent tabs (OpenClaw UI)** | Approve plans, have in-depth sessions, run ad-hoc tasks | After each task assignment, and for complex conversations |
+| **GitHub** | Review and merge PRs (code and documents) | Whenever agents raise PRs |
+| **Terminal (SSH / Tailscale SSH)** | Pi administration, Docker, logs | Occasional |
+
+### Revised Typical CEO Day
+
+```
+Morning
+  └─ Mission Control: scan activity timeline → see what ran overnight
+  └─ GitHub: review any PRs raised overnight → merge or comment
+
+During the day
+  └─ Mission Control: create task for fundraising → assign → open agent tab → approve plan
+  └─ Mission Control: move engine-dev task to "In Progress" → open tab → review progress
+  └─ GitHub: quality-manager has commented on a PR → read, decide, merge
+
+As needed
+  └─ Mission Control: assign comms task ("donor update") → open tab → approve plan
+  └─ GitHub: review the comms draft PR, edit inline, merge when satisfied
+```
+
+**Key mental model with MC:** Mission Control is where you see the full picture and assign work.
+Agent tabs are where you have the conversation and approve plans. GitHub is where you accept
+finished work.
+
+### Fit for IDEA
+
+**Pros:**
+- Single-screen visibility across all 7 agents — no tab-switching just to see what's in progress
+- Built-in approval flows and RBAC formalise the CEO role in the UI itself
+- REST API makes standup automation and task state queries straightforward without parsing markdown
+- Directly replaces the need for Plane (from the Complementary Tools list above) and reduces the
+  need for Portainer
+- Purpose-built for OpenClaw — won't drift out of sync as the gateway evolves
+
+**Cons:**
+- Additional process on a constrained Raspberry Pi (memory, CPU — worth benchmarking)
+- SQLite state lives outside git — less auditable than commits to `BACKLOG.md`
+- Under active development — breaking changes possible between updates
+- One more URL and port to route through Tailscale
+- One-time cost to migrate the existing backlog items into the MC board hierarchy
+
+**Verdict:** Mission Control is a clear upgrade to the operating experience once the base 7-agent
+setup is stable. It is not a prerequisite for launch — the base setup (plan mode + GitHub PRs +
+`BACKLOG.md`) works without it. The recommended path is to launch with the base setup, run it for
+a few weeks, then add Mission Control when the workflow is understood and the Pi's headroom is
+confirmed.
+
+---
+
 ## Daily Standups — Practical Mechanics
 
 A standup is an agent session seeded with a specific context prompt. The simplest implementation is a script you run manually (or via a systemd timer) that:
