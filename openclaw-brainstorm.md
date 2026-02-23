@@ -259,6 +259,57 @@ does not remember silently.
 
 ---
 
+## Agent Skills
+
+OpenClaw skills are named, reusable workflows invocable by `/skill-name` from chat or triggered
+by another agent. They differ from tools (bash, browser, file system) which are lower-level
+capabilities. A skill orchestrates a sequence of tool calls and instructions into a repeatable,
+nameable unit.
+
+Skills add genuine value when a workflow is **multi-step, repeatable, and shared across agents
+or sessions**. Where AGENTS.md instructions are sufficient, a skill is overhead.
+
+### Skills to configure
+
+| Skill | Agents | Reason |
+|---|---|---|
+| `/council-review [PR-url]` | quality-manager | Complex multi-step workflow; too easy to skip steps without it |
+| `/propose [topic]` | all 7 | Shared workflow; enforces consistent naming and template |
+| `/standup` | all 7 | Identical steps for every agent; ensures no deviation |
+| `/research [topic]` | fundraising, communications | Bakes in security rules for external content ingestion |
+
+**`/council-review [PR-url]`** — quality-manager only
+The council pattern (4 parallel perspectives → synthesis) is complex enough to warrant a skill.
+Without it, the QM needs explicit prompting to run the full council each time. With it, one
+invocation reliably triggers the whole structured workflow.
+
+**`/propose [topic]`** — all agents
+Every agent can surface a proposal. The mechanics are always the same: create
+`hq/proposals/YYYY-MM-DD-<topic>.md`, fill in the standard template, open a PR. A shared skill
+ensures consistent naming and structure regardless of which agent uses it.
+
+**`/standup`** — all agents
+The standup contribution workflow is identical for every agent: read the current standup file,
+read own workspace context, contribute the four sections, commit. A shared skill means agents
+always follow the exact same steps rather than improvising.
+
+**`/research [topic]`** — fundraising and communications
+These two agents spend significant time on structured external research, which carries the prompt
+injection risk already documented. A skill bakes in the security rules — summarise-don't-parrot,
+no raw content passed verbatim — so the behaviour is consistent and does not depend on the agent
+remembering its AGENTS.md instructions each time.
+
+### Where skills are not used
+
+**Developer agents (engine-dev, console-dev, site-dev)** — work is too varied; a PR for a bug
+fix looks nothing like one for a new feature. Git and GitHub operations are native Claude Code
+capabilities. AGENTS.md instructions cover the workflow adequately.
+
+**teacher** — guide writing is creative and context-dependent. A skill would constrain more
+than help.
+
+---
+
 ## CEO Approval — Two Layers
 
 **Layer 1 — Plan mode (already active):** Every agent shows its plan before acting. You approve or modify before it executes. This applies to all work.
