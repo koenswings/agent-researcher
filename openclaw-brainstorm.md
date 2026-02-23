@@ -62,6 +62,7 @@ hq/
   PROCESS.md                      ← how ideas become backlog items
   standups/
     2026-02-20-morning.md
+  discussions/                    ← multi-agent dialogue threads (open until CEO closes)
   design/                         ← RFC-style design docs for complex features
   proposals/                      ← new ideas awaiting CEO approval
     YYYY-MM-DD-<topic>.md
@@ -333,16 +334,193 @@ confirmed.
 
 ---
 
-## Daily Standups — Practical Mechanics
+## Multi-Agent Dialogue — Standups and Discussion Threads
 
-A standup is an agent session seeded with a specific context prompt. The simplest implementation is a script you run manually (or via a systemd timer) that:
+### The vision
 
-1. Reads `hq/BACKLOG.md`, recent git commits across all repos, open PRs, and the last standup
-2. Opens a Claude session (in the context of a dedicated `standup` agent, or any agent) with that context
-3. The agent produces a structured standup document saved to `hq/standups/YYYY-MM-DD-morning.md`
-4. You read it, add your priorities or decisions as a CEO comment, and commit
+A standup is not a summary. It is a forum where each agent shares what they are working on,
+what new insights they have developed, and what questions or concerns they have for the team.
+Other agents complement, critique, or build on what was said. New ideas are explored through
+dialogue between stakeholders. The belief is that this kind of multi-stakeholder conversation
+drives innovation and quality that no individual agent — or any single summary — can produce.
 
-Whether to automate this via a cron/systemd timer or keep it manual is an open question — see below.
+### The architectural reality
+
+OpenClaw agents run in separate Claude Code sessions. They cannot talk to each other directly
+or simultaneously. The only shared medium is the filesystem (all repos mounted into the same
+container directory at `/home/node/workspace/`).
+
+"Dialogue" is approximated through three mechanisms:
+1. **Sequential contribution to a shared document** — each agent reads what came before, then
+   adds their voice, so later agents naturally respond to earlier ones
+2. **Persistent discussion threads** — topic-based files in `hq/discussions/` that any agent
+   can contribute to over time
+3. **@-mention convention** — agents signal when they need a specific other agent's input,
+   giving the CEO a clear guide for which tab to open next
+
+The CEO acts as **facilitator**, not just audience. They decide which agents participate, in
+what order, and when a dialogue has reached a useful conclusion.
+
+---
+
+### Mechanism 1: The Roundtable Standup
+
+A structured shared document where agents contribute sequentially. Each agent reads the whole
+file before writing — so later agents naturally respond to earlier ones.
+
+#### Document format
+
+```markdown
+# Standup — YYYY-MM-DD
+
+## Opening (CEO)
+Focus for today, current priorities, anything agents should keep in mind.
+
+---
+
+## engine-dev (Axle ⚙️)
+
+### Working on
+What I am currently doing and why it matters.
+
+### New insight — may affect others
+Something I discovered that others should know. (Leave blank if nothing.)
+
+### Question for the team
+A specific question or concern directed at another agent or the group.
+Use @agent-id to be explicit.
+
+### Response to [agent name]
+(Only if a previous agent raised something relevant to my domain.)
+
+---
+
+## console-dev (Pixel 🖥️)
+[same four sections]
+
+...
+
+## CEO close
+Decisions made. Actions added to backlog. Discussion threads opened.
+```
+
+#### Flow
+
+1. CEO (or the standup script) creates the file with the opening section and today's context
+   (recent commits, open PRs, backlog priorities)
+2. CEO opens Agent 1's tab: *"Add your voice to today's standup at
+   `hq/standups/YYYY-MM-DD.md` — read the whole file first, then contribute"*
+3. Agent reads the whole file, fills in their four sections, commits
+4. CEO opens Agent 2's tab — same instruction; Agent 2 reads Agent 1's contribution and may
+   respond directly to it
+5. Repeat for all participating agents
+6. CEO reads the completed document and adds the closing section: decisions, new backlog
+   entries, discussion threads to open
+7. Any agent whose @-mention needs a follow-up response gets another pass
+
+#### Depth is adjustable
+
+Not every standup needs all seven agents. The CEO decides the scope:
+
+| Mode | Who participates | When |
+|------|-----------------|------|
+| **Daily light** | Agents with active backlog items (2–4) | Most days |
+| **Full roundtable** | All 7 | After a milestone; when something cross-cutting happened |
+| **Issue-triggered** | Relevant 2–3 agents | When any agent flags a cross-cutting concern |
+
+#### Why this creates genuine dialogue
+
+- Each agent explicitly reads what came before writing
+- The template prompts agents to share *insights* (not just status) and ask *questions*
+- Later agents respond directly to earlier ones — emergent cross-pollination
+- The CEO can re-open any agent tab mid-sequence to follow up on an @-mention
+- The completed document is committed to `hq/standups/` — the dialogue is permanent and
+  searchable
+
+---
+
+### Mechanism 2: Discussion Threads — hq/discussions/
+
+Standups surface ideas and concerns. Some need more depth than a standup can give. Discussion
+threads provide a persistent, topic-based forum for this deeper exploration.
+
+**How a thread works:**
+
+1. Any agent (or CEO) opens: `hq/discussions/YYYY-MM-DD-<topic>.md`
+2. The opening section states the question or proposal clearly, plus the opener's initial view
+3. Tagged agents (`@agent-id`) add their perspective when the CEO opens their tab and points
+   them at the thread
+4. The thread stays open across sessions and days until the CEO closes it
+5. The CEO closes a thread with a bottom section: *Resolved — [decision / added to backlog /
+   no-action — reason]*
+6. Closed threads become institutional memory: they explain *why* decisions were made, not
+   just what was decided
+
+**Examples:**
+
+- **Teacher** discovers guides assume USB ports are labelled: *"Is this true for our hardware?"*
+  → tags `@engine-dev` → Axle clarifies → Teacher updates guides, thread closed
+- **Fundraising** finds a grant requiring offline impact metrics → tags `@engine-dev`,
+  `@console-dev` → dialogue about what is feasible to measure → thread feeds into a backlog
+  proposal
+- **Engine-dev** hits an Automerge edge case → tags `@quality-manager`, `@teacher` → QM
+  documents as a known limitation, Teacher adds a troubleshooting note → thread closed
+- **CEO** wants to explore whether a new app category is worth supporting → opens thread,
+  tags all relevant agents → full multi-stakeholder exploration before any backlog commitment
+
+---
+
+### Mechanism 3: @-mention convention
+
+In any shared document — standup, discussion thread, proposal — agents use `@agent-id` to
+signal that a specific agent's input is needed:
+
+```
+@engine-dev — does the disk detection code handle this edge case already?
+@quality-manager — is this a pattern we should flag in the review checklist?
+```
+
+The CEO reads @-mentions as a guide for which tab to open next. The standup script will scan
+the day's standup file after each agent's contribution and print a suggested follow-up list.
+
+---
+
+### Options considered
+
+**Option A — Current proposal (one agent generates a summary):** A script reads context and
+one agent produces a structured status document.
+- ✅ Fast; zero orchestration overhead
+- ❌ Not dialogue; one voice; no cross-pollination; ideas don't improve through challenge
+
+**Option B — Sequential roundtable standup (selected):** Shared document, agents contribute
+in sequence, each reads and responds to previous contributions.
+- ✅ Genuine multi-voice dialogue within OpenClaw's architectural constraints
+- ✅ CEO facilitates rather than relays — agents read each other directly via the file
+- ✅ Depth adjustable; git-preserved; no new tooling required
+- ❌ Takes longer than a single-agent summary (multiple tabs)
+- ❌ Introduces some asymmetry: later agents see more than earlier ones
+
+**Option C — Multi-round dialogue (two explicit passes):** Everyone writes updates first, then
+everyone does a response pass after reading all updates.
+- ✅ More symmetric — everyone reads everyone before responding
+- ❌ Doubles agent sessions per standup; expensive in time and CEO effort
+
+**Option D — Async discussion threads only, no standup:** Replace the standup with
+topic-based threads. Agents contribute when relevant, not on a schedule.
+- ✅ Organic; discussions happen when needed
+- ❌ No cadence; easy to drift; CEO loses the daily pulse
+
+**Option E — Automated orchestration via subagents:** A standup orchestrator agent uses the
+Task tool to spawn each other agent as a subagent, collecting contributions automatically.
+- ✅ Zero CEO tab-switching
+- ❌ Subagents lack each agent's real memory and sandbox state — it simulates the agents
+  rather than engaging the genuine ones; bypasses the CEO's facilitator role
+
+### Decision ✅
+
+**Option B as the standup format, with Option D's discussion threads as a complementary
+mechanism.** Together they provide daily rhythm (roundtable) and deep-topic forums
+(discussions). The @-mention convention connects them.
 
 ---
 
@@ -577,9 +755,11 @@ Repos still to create (after org setup): `console-ui`, `website`, `hq`.
 - [x] Set up VS Code / Claude Code / tmux per-project session pattern
 - [x] Decide AGENTS.md file structure → co-location + HQ index (see File System Structure section)
 - [x] Decide shared knowledge approach → single `hq/CONTEXT.md` (see Shared Agent Knowledge section)
+- [x] Decide standup model → roundtable format + discussion threads (see Multi-Agent Dialogue section)
 - [ ] Review and approve proposal in `/home/pi/projects/idea-proposal/`
 - [ ] Create `hq/CONTEXT.md` — draft covering mission, solution overview, key concepts, guiding principles
 - [ ] Update `hq/ROLES.md` to explain the AGENTS.md split with links to each agent's config
+- [ ] Design standup template (`hq/standups/TEMPLATE.md`) and enhance `./standup` script: seed file with context, support @-mention scanning after each agent pass
 - [ ] Create GitHub organisation (`idea-edu-africa`) and transfer repos; create `console-ui`, `website`, `hq`
 - [ ] Create project directories on Pi: `console-ui/`, `website/`, `hq/` with subdirs
 - [ ] Configure OpenClaw agents (rename engine→engine-dev, console-ui→console-dev; add 5 new agents)
