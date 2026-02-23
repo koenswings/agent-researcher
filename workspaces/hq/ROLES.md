@@ -8,15 +8,41 @@ he approves all plans before execution and merges all PRs.
 
 ## Agent Roster
 
-| Agent | Workspace | Scope |
-|-------|-----------|-------|
-| `engine-dev` | `/projects/engine` | Engine software: TypeScript, Automerge, Docker, Raspberry Pi |
-| `console-dev` | `/projects/console-ui` | Console UI: Solid.js, Chrome Extension |
-| `site-dev` | `/projects/website` | Public website: Astro/Hugo, GitHub Pages |
-| `quality-manager` | `/projects/hq/quality-manager` | PR review across all code repos; cross-project consistency |
-| `teacher` | `/projects/hq/teacher` | Teacher guides for rural schools; all three delivery formats |
-| `fundraising` | `/projects/hq/fundraising` | Grant research, tracking, proposal drafts |
-| `communications` | `/projects/hq/communications` | All external communication, brand voice, content |
+| Agent | Workspace | AGENTS.md location | Scope |
+|-------|-----------|-------------------|-------|
+| `engine-dev` | `/projects/engine` | `/projects/engine/AGENTS.md` | Engine software: TypeScript, Automerge, Docker, Raspberry Pi |
+| `console-dev` | `/projects/console-ui` | `/projects/console-ui/AGENTS.md` | Console UI: Solid.js, Chrome Extension |
+| `site-dev` | `/projects/website` | `/projects/website/AGENTS.md` | Public website: Astro/Hugo, GitHub Pages |
+| `quality-manager` | `/projects/hq/quality-manager` | `/projects/hq/quality-manager/AGENTS.md` | PR review across all code repos; cross-project consistency |
+| `teacher` | `/projects/hq/teacher` | `/projects/hq/teacher/AGENTS.md` | Teacher guides for rural schools; all three delivery formats |
+| `fundraising` | `/projects/hq/fundraising` | `/projects/hq/fundraising/AGENTS.md` | Grant research, tracking, proposal drafts |
+| `communications` | `/projects/hq/communications` | `/projects/hq/communications/AGENTS.md` | All external communication, brand voice, content |
+
+### Why config files are split across repos
+
+**Developer agents** (`engine-dev`, `console-dev`, `site-dev`) have their `AGENTS.md` inside their
+own code repository. This is the standard Claude Code convention — the file is discovered
+automatically from the project root. Role instructions belong alongside the code they govern.
+
+**Coordination agents** (`quality-manager`, `teacher`, `fundraising`, `communications`) produce
+documents, not code. They have no code repository of their own, so their `AGENTS.md` lives in the
+`hq/` repo — the only repository they work in.
+
+This file (`ROLES.md`) is the single navigation point: wherever the config lives, you can always
+find it from here.
+
+---
+
+## Shared Knowledge
+
+All agents read `hq/CONTEXT.md` at the start of each session. That file covers:
+- IDEA's mission and the problem it solves
+- How the system works: Engine, Console, App Disks, offline-first, data synchronization
+- Guiding principles shared across all roles
+
+`SOUL.md` (in each agent's sandbox) covers values and behaviour.
+`AGENTS.md` (per agent) covers role-specific instructions.
+`CONTEXT.md` (this repo) covers factual product and mission knowledge.
 
 ---
 
@@ -39,7 +65,7 @@ See `PROCESS.md` for the full pipeline.
 - `engine-dev` and `console-dev` write code. They do not write external content.
 - `quality-manager` reviews code and documents. It does not write features or content.
 - `teacher` writes guides for school users. It does not write donor or press content.
-- `fundraising` researches and drafts grant applications. It does not send external emails.
+- `fundraising` researches and drafts grant applications. It does not make external contact.
 - `communications` drafts all external content. It does not send anything without CEO approval.
 - `site-dev` builds the website. It does not write content — that comes from `communications`.
 

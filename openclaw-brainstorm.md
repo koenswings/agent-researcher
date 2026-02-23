@@ -57,7 +57,8 @@ The `quality-manager`, `teacher`, `fundraising`, and `communications` agents are
 ```
 hq/
   BACKLOG.md                      ← master backlog, covers all projects
-  ROLES.md                        ← summary of all agents and their scope
+  ROLES.md                        ← agent roster with links to all AGENTS.md files (explains split)
+  CONTEXT.md                      ← shared knowledge: mission, solution, key concepts (read by all agents)
   PROCESS.md                      ← how ideas become backlog items
   standups/
     2026-02-20-morning.md
@@ -345,6 +346,146 @@ Whether to automate this via a cron/systemd timer or keep it manual is an open q
 
 ---
 
+## File System Structure — Agent Config Location
+
+### The observed split
+
+Developer agents (`engine-dev`, `console-dev`, `site-dev`) have their `AGENTS.md` inside their own
+code repositories. Coordination agents (`quality-manager`, `teacher`, `fundraising`,
+`communications`) have theirs under `hq/`. This can feel inconsistent at first glance.
+
+### Why it is actually intentional
+
+**Developer agents are tied to a codebase.** Co-locating `AGENTS.md` in the repo is the standard
+Claude Code convention — the file is discovered automatically from the project root and tells the
+agent how to work in that specific repo. The config belongs alongside the code it governs, just like
+`package.json` or a `Makefile`.
+
+**Coordination agents produce documents, not code.** They have no code repository of their own.
+The `hq/` repo is the only repo they work in, so their `AGENTS.md` naturally lives there as a
+subdirectory.
+
+### Options considered
+
+**Option A — Co-location (current as-is):** `AGENTS.md` in each agent's primary workspace;
+coordination agents in `hq/` subdirs.
+- ✅ Natural home; standard Claude Code convention for developer agents
+- ❌ Three separate repos to scan when looking for all agent configs; non-obvious to new contributors
+
+**Option B — Centralise all in HQ:** Move all `AGENTS.md` to `hq/engine-dev/`, `hq/console-dev/`,
+`hq/site-dev/` alongside the coordination agent subdirs.
+- ✅ Single repo to find all agent definitions
+- ❌ Breaks co-location convention; developer agents must look in a different repo for their own instructions; code repos become "bare" with no configuration
+
+**Option C — Hybrid: co-location + explicit HQ index (selected):** Keep `AGENTS.md` in each
+workspace (code repos for developers, HQ subdirs for coordinators). Improve `hq/ROLES.md` to
+explicitly document where each agent's config lives and why, with links — making it the single
+navigation point even though configs are distributed.
+- ✅ No duplication; no broken convention; developer agents find instructions in their own repo
+- ✅ `ROLES.md` already serves as the team roster — it just needs the explanation and links
+
+**Option D — One dedicated repo per agent + one shared company repo:** Every agent gets their own
+git repository. Coordination agents (`quality-manager`, `teacher`, `fundraising`, `communications`)
+move from `hq/` subdirs into dedicated standalone repos. The `hq/` repo is stripped to purely
+shared coordination content (CONTEXT.md, ROLES.md, BACKLOG.md, PROCESS.md, standups/, design/,
+proposals/) — no agent workspace content at all.
+
+Repo count: 7 agent repos + 1 company repo = **8 repos total** (vs 4 in Options A/C).
+
+```
+idea-edu-africa/
+  engine           ← engine-dev workspace (unchanged)
+  console-ui       ← console-dev workspace (unchanged)
+  website          ← site-dev workspace (unchanged)
+  quality-manager  ← NEW: own repo (currently hq/quality-manager/)
+  teacher          ← NEW: own repo (currently hq/teacher/)
+  fundraising      ← NEW: own repo (currently hq/fundraising/)
+  communications   ← NEW: own repo (currently hq/communications/)
+  hq               ← company repo: CONTEXT.md, ROLES.md, BACKLOG.md,
+                      PROCESS.md, standups/, design/, proposals/
+```
+
+Key consequence: `AGENTS.md` co-location now works **uniformly for all 7 agents** — every agent's
+config is at the root of their own repo. The developer/coordinator split disappears entirely.
+
+- ✅ Structural confusion disappears — every agent has the exact same setup (own repo + company repo)
+- ✅ Standard Claude Code convention (`AGENTS.md` at repo root) applies to all agents without exceptions
+- ✅ Clean git history per agent: teacher guide commits live only in the teacher repo
+- ✅ Independent per-repo access control if needed (e.g. make teacher guides public separately)
+- ✅ Company repo is purely coordination — no workspace noise
+- ✅ Pattern scales cleanly: adding a new agent = create a new repo
+- ❌ Four additional GitHub repos to create, configure, and maintain (branch protection ×4)
+- ❌ Coordination agents' path to shared files changes: BACKLOG.md is now in the company repo
+  (`/home/node/workspace/hq/BACKLOG.md`) rather than `../BACKLOG.md` — a minor AGENTS.md update,
+  not a real obstacle since all repos are mounted in the same container directory
+- ❌ One-time migration effort: move content out of `hq/` subdirs into new repos
+
+### Decision ✅
+
+**Currently: Option C.** The split is documented in `ROLES.md` with links and explanation.
+
+**Note for review:** Option D directly addresses the original concern — the structural confusion —
+rather than patching it with documentation. The cost is 4 additional repos and a one-time migration.
+If conceptual uniformity matters more than minimising repo count, Option D is the stronger choice.
+This decision is worth revisiting before the full implementation starts.
+
+---
+
+## Shared Agent Knowledge — CONTEXT.md
+
+### The problem
+
+Technical knowledge about App Disks, Engine, Console, offline-first operation, and data
+synchronization currently lives primarily in `engine-dev/AGENTS.md`. But every agent needs this
+understanding:
+
+- `teacher` must explain app usage accurately to non-technical school staff
+- `fundraising` must describe the solution credibly to grant reviewers
+- `communications` must explain how the system works in public-facing writing
+- `quality-manager` must catch when changes break architectural principles (e.g. offline-first)
+- `site-dev` must present the product accurately on the website
+
+`SOUL.md` (shared across all agents) covers values and behaviour but not factual product knowledge.
+Individual `AGENTS.md` files describe roles, not the product. There is no shared knowledge base.
+
+### Options considered
+
+**Option A — Extend SOUL.md:** Add "What we build" and "How it works" sections to the existing
+shared SOUL.md.
+- ✅ Already loaded by all agents; zero new files
+- ❌ Conflates values/behaviour with factual product knowledge; SOUL.md becomes harder to maintain
+and update as the product evolves
+
+**Option B — Per-agent CONTEXT.md in each sandbox:** Write a tailored `CONTEXT.md` per agent,
+calibrated to each role's depth of technical knowledge.
+- ✅ Can be tailored (engine-dev gets deep technical detail; fundraising gets high-level)
+- ❌ Seven copies to maintain; any factual update requires seven edits; drift is inevitable
+
+**Option C — Single `hq/CONTEXT.md` read by all agents (selected):** One file in the HQ repo.
+All agents read it at the start of each session (referenced in HEARTBEAT.md). Covers:
+1. **Mission** — Who IDEA serves, what problem it solves, why it matters
+2. **Solution overview** — What the system does at a high level
+3. **Key concepts** — Engine, Console, App Disks, offline-first, data synchronization, physical web
+   app management
+4. **Guiding principles** — Reliability > features, no internet dependency, teacher-friendly
+- ✅ Single source of truth; one edit propagates to all agents via normal git/PR workflow
+- ✅ Factual knowledge cleanly separated from values (SOUL.md) and role instructions (AGENTS.md)
+- ✅ Maintained like any other HQ document — QM reviews for factual accuracy
+
+**Option D — Embed context in each AGENTS.md:** Expand the "Context" section in every role
+definition file. Some AGENTS.md files already partially do this.
+- ✅ No new files
+- ❌ Duplication across seven files; no guarantee coordination agents are updated when technical
+  concepts evolve; becomes inconsistent over time
+
+### Decision ✅
+
+**Option C.** Add `hq/CONTEXT.md` as the shared knowledge base for all agents. Keep SOUL.md for
+values/behaviour and AGENTS.md for role-specific instructions. All agents read CONTEXT.md at the
+start of each session via HEARTBEAT.md.
+
+---
+
 ## Decisions
 
 1. **Rename `engine` → `engine-dev`?** ✅ Yes.
@@ -434,7 +575,11 @@ Repos still to create (after org setup): `console-ui`, `website`, `hq`.
 - [x] Decide GitHub org name → `idea-edu-africa`
 - [x] Set up `engine`, `openclaw`, `idea-proposal` repos on GitHub (currently under `koenswings`)
 - [x] Set up VS Code / Claude Code / tmux per-project session pattern
+- [x] Decide AGENTS.md file structure → co-location + HQ index (see File System Structure section)
+- [x] Decide shared knowledge approach → single `hq/CONTEXT.md` (see Shared Agent Knowledge section)
 - [ ] Review and approve proposal in `/home/pi/projects/idea-proposal/`
+- [ ] Create `hq/CONTEXT.md` — draft covering mission, solution overview, key concepts, guiding principles
+- [ ] Update `hq/ROLES.md` to explain the AGENTS.md split with links to each agent's config
 - [ ] Create GitHub organisation (`idea-edu-africa`) and transfer repos; create `console-ui`, `website`, `hq`
 - [ ] Create project directories on Pi: `console-ui/`, `website/`, `hq/` with subdirs
 - [ ] Configure OpenClaw agents (rename engine→engine-dev, console-ui→console-dev; add 5 new agents)
