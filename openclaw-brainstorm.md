@@ -46,7 +46,20 @@ Each IDEA role becomes one agent entry in `openclaw.json`, with its own workspac
 
 *Note: existing `engine` and `console-ui` entries in openclaw.json must be renamed to `engine-dev` and `console-dev`.*
 
-The `quality-manager`, `teacher`, `fundraising`, and `communications` agents are given subdirectories inside `hq/` as their workspace. This gives each its own `AGENTS.md` while keeping them inside the shared HQ directory tree. Because `/home/pi/projects` is fully mounted into the container as `/home/node/workspace`, every agent can read any other project if its AGENTS.md instructs it to — the QM in particular needs this to review code across all repos.
+The `quality-manager`, `teacher`, `fundraising`, and `communications` agents are given subdirectories inside `hq/` as their workspace. This gives each its own `AGENTS.md` while keeping them inside the shared HQ directory tree.
+
+### Workspace vs. Shared Filesystem
+
+Two distinct concepts:
+
+- **`workspace` in `openclaw.json`** — the agent's default working directory; where it "lives" and where its `AGENTS.md` is found.
+- **The Docker volume mount** — what the agent can actually access on disk.
+
+`/home/pi/projects` is mounted into the container as `/home/node/workspace`. All agent workspaces are subdirectories of that mount. Because they all run inside the same container against the same mount, every agent can read and write anywhere under `/home/node/workspace/` — not just its own workspace subdirectory.
+
+This is why the quality-manager (workspace: `/home/node/workspace/hq/quality-manager`) can read `../engine` or `../console-ui` — the full project tree is visible above it.
+
+**Crucially, this is not changed by using separate git repos.** Whether `engine`, `console-ui`, and `hq` are separate repositories or a monorepo makes no difference to the Docker mount. Separate repos means separate git histories; it does not mean filesystem isolation. The shared workspace is the mount, not the git layout.
 
 ---
 
