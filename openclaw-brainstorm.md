@@ -1,12 +1,18 @@
-# IDEA Virtual Company — Brainstorm
+# IDEA Virtual Company — Configuration Plan
 
-*Brainstorming session — no configuration changes made yet.*
+**OpenClaw** is a self-hosted AI assistant platform that runs a team of AI agents, each tied to a codebase and a defined role. Three characteristics define it:
 
-**OpenClaw** is the self-hosted AI assistant platform already running on this Pi at `/home/pi/openclaw`. It manages multiple AI agents, each tied to a workspace (a codebase directory), and is accessible from any device on the Tailscale network at `https://openclaw-pi.tail2d60.ts.net`.
+**Self-hosted.** It runs on your own hardware — in this case, a Raspberry Pi — under your full control. No cloud dependency, no data leaving the device except the Anthropic API calls themselves. Accessible from any device on the Tailscale network at `https://openclaw-pi.tail2d60.ts.net`.
+
+**Autonomous by schedule.** Agents are not passive tools waiting to be prompted. OpenClaw's built-in heartbeat and cron mechanisms put every agent in a continuous loop: they wake on a schedule, check on things, surface concerns, and act — without CEO intervention. This is what makes the virtual company feel alive: agents that are always working, not tools waiting to be used.
+
+**Accessible from messaging platforms.** OpenClaw connects natively to WhatsApp, Telegram, Slack, Discord, Signal, and iMessage. Agents appear as contacts you can message directly. The CEO can assign tasks, approve plans, and receive updates from a phone. Agents can reach outward too — posting updates to stakeholder groups, messaging field workers, gathering reports — through the same channels.
+
+---
 
 **IDEA** (Initiative for Digital Education in Africa) is the charity this virtual company serves. It deploys Raspberry Pi-based offline school computers running Engine and Console into rural African schools.
 
-The goal is to configure OpenClaw to run the IDEA virtual company: multiple agents, each playing a specific role, coordinating through shared files and a CEO approval loop.
+This document describes how OpenClaw is configured to run the IDEA virtual company: seven agents, each playing a specific role, coordinating through shared files, Mission Control, and a CEO approval loop.
 
 ---
 
@@ -184,33 +190,12 @@ A backlog task covers creating this file before the first AGENTS.md update cycle
 
 ---
 
-## Agent Memory — Design Decision
-
-### How OpenClaw's built-in memory system works
-
-OpenClaw ships with an automatic memory system:
-
-1. During and after each conversation, notes are saved as a dated markdown file
-   (`memory/YYYY-MM-DD.md`) in the agent's workspace
-2. A periodic synthesis job reads all daily notes and distils them into `MEMORY.md` —
-   accumulated preferences, patterns, and learned facts
-3. At the start of each new session, the agent reads `MEMORY.md` to carry context forward
-4. All memory files are vectorised so the agent can do semantic search across them
-
-This system is well suited to personal assistants where the goal is "learn my preferences and
-improve silently over time."
-
-### Why not for IDEA
+## Agent Memory
 
 IDEA's agents operate inside a governance structure where **the CEO should know what the agents
-know**. Automatic, opaque memory accumulation works against this:
-
-- Memory grows without the CEO seeing or approving what was retained
-- Incorrect patterns can embed themselves silently
-- Memory files live outside git — not versioned, not auditable
-- Accumulated state drifts from the documented role definitions in `AGENTS.md`
-
-### What IDEA uses instead
+know**. OpenClaw's built-in automatic memory system — which accumulates notes and synthesises
+them silently into a MEMORY.md — is not used. It grows without CEO visibility, lives outside git,
+and drifts from the documented role definitions in `AGENTS.md`.
 
 **Structured documents in git are the memory layer.**
 
@@ -222,17 +207,6 @@ auditable, and CEO-approved.
 The same principle applies to shared knowledge. New facts about the product go into
 `hq/CONTEXT.md` via PR. New operational patterns go into the relevant `AGENTS.md`. Nothing
 accumulates silently.
-
-### Options considered
-
-| Approach | How it works | Fit for IDEA |
-|---|---|---|
-| **OpenClaw built-in** | Daily notes → MEMORY.md synthesis → injected into system prompt | Opaque, lives outside git, not auditable |
-| **Structured docs in git (selected)** | Agent proposes AGENTS.md or CONTEXT.md updates via PR; CEO approves | Transparent, versioned, CEO-controlled |
-| **mem0** (open source) | Dedicated memory layer with structured CRUD, user/session/agent tiers, self-hostable | More controllable than built-in, but more infrastructure on a constrained Pi |
-| **Zep** (open source) | Temporal knowledge graph — facts, relationships, time-aware context | Powerful for relational memory; overkill for IDEA's use case |
-
-→ **Decision:** Structured docs in git. OpenClaw's built-in memory is not used. See Decision #4 in the Decisions section.
 
 ---
 
@@ -360,100 +334,132 @@ As needed
 
 ---
 
+## WhatsApp — Outbound Agent Communication
+
+Beyond the CEO's own messaging access, WhatsApp opens direct-to-stakeholder communication channels that no other part of this stack provides. OpenClaw connects via **Baileys** — a WhatsApp Web protocol library — using a dedicated phone number registered on a cheap prepaid SIM. Agents appear in WhatsApp as a contact with that number, sandboxed from the CEO's personal account. They can post to groups and exchange messages with individuals without any access to the CEO's contacts or other chats.
+
+All outbound messages go through the same CEO approval loop as every other agent output. Nothing is sent without an approved plan.
+
+### Setup
+
+**What you need:** a physical prepaid SIM (€5–10, any carrier). Do not use a VoIP or virtual number — WhatsApp blocks them. A cheap spare handset is useful but any phone will do for the initial pairing.
+
+**1. Register the SIM on WhatsApp**
+Insert the SIM, install WhatsApp, register with the number. Set the profile name to something recognisable (e.g. *"IDEA Assistant"*). This is what supporters and field workers see.
+
+**2. Configure `openclaw.json`**
+```json
+{
+  "channels": {
+    "whatsapp": {
+      "dmPolicy": "pairing",
+      "allowFrom": ["+32XXXXXXXXX"]
+    }
+  }
+}
+```
+`allowFrom` is the CEO's personal number — only they can DM OpenClaw directly. Edit and restart as usual:
+```bash
+sudo nano /var/lib/docker/volumes/openclaw_openclaw-data/_data/openclaw.json
+sudo docker restart openclaw-gateway
+```
+
+**3. Scan the QR code**
+```bash
+sudo docker exec openclaw-gateway node dist/index.js channels login --channel whatsapp
+```
+A QR code appears in the terminal. On the dedicated phone: **WhatsApp → Settings → Linked Devices → Link a Device** → scan. The connection briefly drops and reconnects — this is normal. OpenClaw is now linked.
+
+**4. Add to groups and contacts**
+- Add the dedicated number to the IDEA supporters WhatsApp group
+- Save the number on your own phone as *"IDEA Assistant"*
+- Share the number with field workers so they can message it directly
+
+The phone can sit in a drawer after pairing — WhatsApp multi-device keeps the session alive without it being online.
+
+### IDEA supporters group — communications agent
+
+The communications agent posts regular updates to the IDEA supporters WhatsApp group. Short, human-feeling messages: a school going live, a deployment milestone, a grant application submitted, a new engine feature shipped. This is the lowest-friction external channel in the stack — more immediate than a newsletter, more personal than a website update.
+
+This is a stepping stone to the newsletter, not a replacement. The same content that goes to the group becomes raw material for the monthly donor newsletter. The communications agent drafts both; the CEO approves before either is sent. The WhatsApp message tests the message — if it lands well, it earns a place in the newsletter.
+
+### Field worker liaison — local follow-up in schools
+
+IDEA deploys into schools through local people who visit regularly and see what is actually happening on the ground: which apps teachers use, what breaks, what confuses people, whether children are engaged. Getting that knowledge back to the team is essential — and currently has no structured channel.
+
+An agent can reach out to field workers directly over WhatsApp after each school visit:
+
+> *"Hi [name] — you visited [school] this week. What did you see? What was working well? Anything broken or confusing? Any teachers who need support?"*
+
+The field worker replies naturally, in their own words. The agent synthesises the response into a structured visit report, flags anything urgent — broken hardware, a teacher in difficulty, an app that isn't working — and commits the report to the hq repo where it becomes part of the permanent record.
+
+The same channel works in reverse: the agent sends guidance outward. When a new app is deployed or a known issue is resolved, field workers receive a short briefing — what changed, what to look out for, how to answer teacher questions. The agent becomes the bridge between the development team and the people in the schools.
+
+**Which agents handle this?** The work splits cleanly across two existing roles:
+
+- The **teacher** agent owns the knowledge: what questions to ask field workers, what guidance to give, how to interpret what they report.
+- The **communications** agent owns the channel: the WhatsApp connection, message drafting, managing the conversation thread.
+
+Teacher drafts the content; communications sends it and brings back the responses. Both routes go through the CEO approval loop before anything reaches a field worker.
+
+---
+
 ## Complementary Open Source Tools
 
-OpenClaw's web UI is the primary dashboard — there are no third-party dashboards built specifically for it. These tools add useful capability around it:
+These tools add useful capability alongside OpenClaw and Mission Control:
 
 ### Portainer — Docker management UI
-The most immediately useful addition. Gives a web UI to see all running containers, their health, logs, and resource usage — without needing SSH.
+Gives a web UI to see all running containers, their health, logs, and resource usage — without needing SSH. Runs as a Docker container alongside OpenClaw. Useful for monitoring the OpenClaw container itself and checking logs.
 
-- Runs as a Docker container alongside OpenClaw
-- Useful for monitoring the OpenClaw container itself and checking logs
-
-### Plane — ~~project management~~ (replaced by Mission Control)
-Plane is not needed. Mission Control provides a Kanban board and task management purpose-built for OpenClaw. Adding Plane would be redundant.
-
-### n8n — workflow automation
-Useful for automating the standup trigger, scheduled agent prompts, or GitHub notifications. Rather than running `./standup morning` manually, n8n can trigger it on a schedule.
 
 ### Grafana — monitoring dashboards
 Visibility into Pi health (CPU, memory, temperature, disk usage) — relevant for an always-on device deployed in a rural school. Pairs with Prometheus for metrics collection.
 
 ---
 
-## Mission Control — An Alternative Operating Layer
+## Mission Control
 
 [openclaw-mission-control](https://github.com/abhi1693/openclaw-mission-control) is a purpose-built
-dashboard for running OpenClaw at team scale. It adds a Kanban board, structured task dispatch,
+dashboard for running OpenClaw at team scale. It provides a Kanban board, structured task dispatch,
 real-time agent monitoring, and built-in approval flows on top of the OpenClaw gateway. It runs as
 a Next.js application (port 4000), connects to the OpenClaw gateway via WebSocket (port 18789),
-persists state in SQLite, and deploys as a Docker container. The project is under active development
-— production-grade architecture, but expect occasional breaking changes.
+persists state in SQLite, and deploys as a Docker container alongside OpenClaw.
 
-### What Changes in the Setup
+### Setup
 
-**Additions:**
-- Mission Control runs as an additional Docker container alongside OpenClaw, added to `compose.yaml`
+- Mission Control runs as an additional Docker container added to `compose.yaml`
 - A bearer token (`LOCAL_AUTH_TOKEN`, minimum 50 characters) links it to the OpenClaw gateway
-- A one-time board hierarchy is configured in the MC UI: **IDEA org → Board Groups (Engineering, HQ)
-  → Boards per agent or project → Tasks** (the backlog items)
-- A second Tailscale-accessible URL for the MC UI (e.g. `https://openclaw-pi.tail2d60.ts.net:4000`)
+- The board hierarchy is configured once in the MC UI: **IDEA org → Board Groups (Engineering, HQ) → Boards per agent or project → Tasks**
+- Accessible at `https://openclaw-pi.tail2d60.ts.net:4000`
 
-**Unchanged:**
-- `openclaw.json` — agent config, workspaces, plan mode, and sandbox settings are untouched
-- `AGENTS.md` files — role definitions are unaffected
-- Sandbox files — IDENTITY, SOUL, USER, TOOLS, HEARTBEAT, BOOTSTRAP are unaffected
-- The HQ directory structure on disk
+The rest of the setup is unaffected: `openclaw.json`, `AGENTS.md` files, sandbox files, and the HQ directory structure on disk are unchanged.
 
-**Adapted:**
-- `hq/BACKLOG.md` is no longer manually maintained. It becomes a **read-only auto-export**
-  from the MC Kanban board, regenerated by `hq/scripts/export-backlog.sh`. MC is the source
-  of truth; BACKLOG.md is the git-committed readable backup for agents and audit purposes.
+### How task management works
 
-### What Changes in Daily Operations
+Task dispatch happens in the Kanban board. Create a task, assign it to the relevant agent. The board columns — `Planning → Inbox → Assigned → In Progress → Review → Done` — give a single-screen view of all 7 agents' work simultaneously.
 
-**Task dispatch moves to the Kanban board.** Instead of opening an agent's chat tab and typing
-"pick the next backlog item", you create a task in MC and assign it to the relevant agent. The board
-columns — Planning → Inbox → Assigned → In Progress → Review → Done — give a single-screen view of
-all 7 agents' work simultaneously.
+Plan approval still happens in individual agent tabs. After assigning a task in MC, open that agent's chat tab to read and approve its plan before anything executes. `DEFAULT_PERMISSION_MODE=plan` is unchanged — MC dispatches work; it does not replace the approval layer.
 
-**Plan approval still happens in individual agent tabs.** Mission Control dispatches work, but
-`DEFAULT_PERMISSION_MODE=plan` is unchanged. After assigning a task, you go to that agent's chat
-tab to read and approve its plan before anything executes. MC does not replace this layer.
+The activity timeline is a real-time SSE-fed log across all agents. Scanning it each morning gives a quick view of overnight activity. The roundtable standup (below) provides the deeper daily dialogue; MC's timeline provides the live pulse.
 
-**The activity timeline partially replaces the standup script.** MC provides a real-time SSE-fed
-activity log across all agents. The morning standup becomes a scan of that timeline rather than
-triggering a script to generate `hq/standups/YYYY-MM-DD-morning.md`. The standup script can still
-run if a written record is preferred.
-
-**The proposal/PR flow is unchanged.** MC tasks are the implementation-level view. The GitHub
-PR-based proposal and review process remains the approval layer for finished work.
-
+The proposal and PR flow is unaffected by MC. MC tasks are the implementation-level view; GitHub PR-based proposals and reviews remain the approval layer for finished work.
 
 ### BACKLOG.md Export
 
-Mission Control persists task state in SQLite — outside git and not human-readable without the MC UI.
-To preserve auditability and give agents a readable task list, `hq/BACKLOG.md` is kept as an
-auto-exported mirror of the Kanban board.
+Mission Control persists task state in SQLite — outside git and not human-readable without the MC UI. `hq/BACKLOG.md` is kept as an auto-exported mirror of the Kanban board so that agents have a readable task list and git retains an audit trail.
 
 **Mechanism:**
 - `hq/scripts/export-backlog.sh` queries the MC REST API and regenerates `BACKLOG.md` in standard
   markdown format, grouped by board (Engineering, HQ) and column (backlog / in progress / review / done)
-- The file opens with a generated header:
-  `<!-- Auto-exported from Mission Control YYYY-MM-DD HH:MM. Source of truth is the MC Kanban. Do not edit manually. -->`
-- The script is run:
-  - On demand: `cd hq && ./scripts/export-backlog.sh`
-  - On a schedule: via a cron job or n8n trigger (daily or after major task state changes)
-  - Output is committed to the hq repo as a normal file change
+- The file opens with: `<!-- Auto-exported from Mission Control YYYY-MM-DD HH:MM. Do not edit manually. -->`
+- Triggered automatically by OpenClaw's built-in cron scheduler (schedule to be defined)
+- Output is committed to the hq repo as a normal file change
 
-**What agents use it for:**
-Agents read `BACKLOG.md` at session start (via HEARTBEAT.md) to understand current priorities —
-same as before, just auto-generated rather than hand-maintained. It is versioned, searchable, and
-human-readable without the MC UI. It is never edited manually.
+Agents read `BACKLOG.md` at session start via HEARTBEAT.md. It is versioned and searchable without needing the MC UI. It is never edited manually.
 
 **Export format:**
 ```markdown
-<!-- Auto-exported from Mission Control 2026-03-01 08:00. Source of truth is the MC Kanban. Do not edit manually. -->
+<!-- Auto-exported from Mission Control 2026-03-01 08:00. Do not edit manually. -->
 
 # BACKLOG
 
@@ -475,25 +481,51 @@ human-readable without the MC UI. It is never edited manually.
 - [ ] Getting Started guide | teacher
 ```
 
-### Fit for IDEA
+---
 
-**Pros:**
-- Single-screen visibility across all 7 agents — no tab-switching just to see what's in progress
-- Built-in approval flows and RBAC formalise the CEO role in the UI itself
-- REST API makes standup automation and task state queries straightforward without parsing markdown
-- Directly replaces the need for Plane (from the Complementary Tools list above) and reduces the
-  need for Portainer
-- Purpose-built for OpenClaw — won't drift out of sync as the gateway evolves
-- BACKLOG.md export keeps git as the audit layer while MC is the live task layer
+## Scheduling and Autonomous Behaviour
 
-**Cons:**
-- Additional process on a constrained Raspberry Pi (memory, CPU — worth benchmarking)
-- SQLite state lives outside git — mitigated by the BACKLOG.md export mechanism
-- Under active development — breaking changes possible between updates
-- One more URL and port to route through Tailscale
-- One-time cost to migrate the existing backlog items into the MC board hierarchy
+OpenClaw's scheduling mechanisms are the foundation of autonomous operation. Without them, agents are passive: they respond only when the CEO opens a tab. With them, agents wake on a schedule, check on things, surface concerns, keep shared state fresh, and seed the morning standup — without any CEO input. This is what gives the virtual company the feel of a team that is always working, not a set of tools waiting to be used.
 
-→ **Decision:** Mission Control is adopted from day one as the operating layer. See Decision #12 in the Decisions section.
+OpenClaw provides two native mechanisms that together cover every scheduled need.
+
+### Heartbeat — routine monitoring on an interval
+
+A heartbeat is a periodic wake-check. OpenClaw sends the agent a prompt at a configured interval during active hours. The agent reads `HEARTBEAT.md`, runs its checks, and replies `HEARTBEAT_OK` if nothing needs attention. If something does — an unreviewed PR, a blocked backlog item, a concern to raise — the agent surfaces it and waits for the CEO.
+
+One heartbeat batches what would otherwise be many separate polling tasks into a single context-aware turn. Because the agent has full session history, it can reason across everything it knows rather than responding to an isolated prompt in the dark.
+
+Configuration per agent in `openclaw.json`:
+
+```json
+"heartbeat": {
+  "every": "30m",
+  "target": "last",
+  "activeHours": { "start": "08:00", "end": "22:00" }
+}
+```
+
+### Cron — exact-time triggers
+
+Cron triggers an agent or script at a precise time using standard cron expressions, running in an isolated session. Used for tasks that need exact timing: the morning standup seed and the BACKLOG.md export. These are the events that structure the company's daily rhythm.
+
+### Scheduled activities
+
+| Activity | Mechanism | Schedule | Who |
+|----------|-----------|----------|-----|
+| Morning standup file seeded | Cron | 07:30 Mon–Fri | Standup script — creates `hq/standups/YYYY-MM-DD.md` with the opening section: recent commits, open PRs, backlog priorities |
+| BACKLOG.md refreshed from Mission Control | Cron | Every 2 hours, 07:00–20:00 | `hq/scripts/export-backlog.sh` — queries MC REST API, commits updated `BACKLOG.md` to hq repo |
+| engine-dev heartbeat | Heartbeat | Every 30 min, 08:00–22:00 | Checks open PRs, test status, assigned backlog items |
+| console-dev heartbeat | Heartbeat | Every 30 min, 08:00–22:00 | Checks open PRs, assigned backlog items |
+| site-dev heartbeat | Heartbeat | Every 30 min, 08:00–22:00 | Checks open PRs, deploy status, assigned backlog items |
+| quality-manager heartbeat | Heartbeat | Every 30 min, 08:00–22:00 | Scans for open PRs awaiting review across all repos; flags anything stale |
+| teacher heartbeat | Heartbeat | Every 30 min, 08:00–22:00 | Checks assigned backlog items; flags guides needing real teacher review |
+| fundraising heartbeat | Heartbeat | Every 30 min, 08:00–22:00 | Checks assigned backlog items; surfaces grant deadlines |
+| communications heartbeat | Heartbeat | Every 30 min, 08:00–22:00 | Checks assigned backlog items; surfaces drafts awaiting CEO review |
+
+The standup seed cron job is the signal that starts the CEO's morning. The CEO arrives to find the standup file already created and populated with context — commits since yesterday, open PRs, current backlog priorities. All they need to do is open each agent's tab and ask them to contribute.
+
+The exact schedules above are the intended configuration. The backlog item "Define OpenClaw cron and heartbeat schedule" covers implementing them in `openclaw.json` and the standup script.
 
 ---
 
@@ -648,207 +680,49 @@ the day's standup file after each agent's contribution and print a suggested fol
 
 ---
 
-### Options considered
-
-**Option A — Current proposal (one agent generates a summary):** A script reads context and
-one agent produces a structured status document.
-- ✅ Fast; zero orchestration overhead
-- ❌ Not dialogue; one voice; no cross-pollination; ideas don't improve through challenge
-
-**Option B — Sequential roundtable standup (selected):** Shared document, agents contribute
-in sequence, each reads and responds to previous contributions.
-- ✅ Genuine multi-voice dialogue within OpenClaw's architectural constraints
-- ✅ CEO facilitates rather than relays — agents read each other directly via the file
-- ✅ Depth adjustable; git-preserved; no new tooling required
-- ❌ Takes longer than a single-agent summary (multiple tabs)
-- ❌ Introduces some asymmetry: later agents see more than earlier ones
-
-**Option C — Multi-round dialogue (two explicit passes):** Everyone writes updates first, then
-everyone does a response pass after reading all updates.
-- ✅ More symmetric — everyone reads everyone before responding
-- ❌ Doubles agent sessions per standup; expensive in time and CEO effort
-
-**Option D — Async discussion threads only, no standup:** Replace the standup with
-topic-based threads. Agents contribute when relevant, not on a schedule.
-- ✅ Organic; discussions happen when needed
-- ❌ No cadence; easy to drift; CEO loses the daily pulse
-
-**Option E — Automated orchestration via subagents:** A standup orchestrator agent uses the
-Task tool to spawn each other agent as a subagent, collecting contributions automatically.
-- ✅ Zero CEO tab-switching
-- ❌ Subagents lack each agent's real memory and sandbox state — it simulates the agents
-  rather than engaging the genuine ones; bypasses the CEO's facilitator role
-
-→ **Decision:** Option B (sequential roundtable standup) with Option D (discussion threads) as a complementary mechanism. See Decision #3 in the Decisions section.
 
 ---
 
-## File System Structure — Agent Config Location
+## File System Structure
 
-### The observed split
-
-Developer agents (`engine-dev`, `console-dev`, `site-dev`) have their `AGENTS.md` inside their own
-code repositories. Coordination agents (`quality-manager`, `teacher`, `fundraising`,
-`communications`) have theirs under `hq/`. This can feel inconsistent at first glance.
-
-### Why it is actually intentional
-
-**Developer agents are tied to a codebase.** Co-locating `AGENTS.md` in the repo is the standard
-Claude Code convention — the file is discovered automatically from the project root and tells the
-agent how to work in that specific repo. The config belongs alongside the code it governs, just like
-`package.json` or a `Makefile`.
-
-**Coordination agents produce documents, not code.** They have no code repository of their own.
-The `hq/` repo is the only repo they work in, so their `AGENTS.md` naturally lives there as a
-subdirectory.
-
-### Options considered
-
-**Option A — Co-location (current as-is):** `AGENTS.md` in each agent's primary workspace;
-coordination agents in `hq/` subdirs.
-- ✅ Natural home; standard Claude Code convention for developer agents
-- ❌ Three separate repos to scan when looking for all agent configs; non-obvious to new contributors
-
-**Option B — Centralise all in HQ:** Move all `AGENTS.md` to `hq/engine-dev/`, `hq/console-dev/`,
-`hq/site-dev/` alongside the coordination agent subdirs.
-- ✅ Single repo to find all agent definitions
-- ❌ Breaks co-location convention; developer agents must look in a different repo for their own instructions; code repos become "bare" with no configuration
-
-**Option C — Hybrid: co-location + explicit HQ index (selected):** Keep `AGENTS.md` in each
-workspace (code repos for developers, HQ subdirs for coordinators). Improve `hq/ROLES.md` to
-explicitly document where each agent's config lives and why, with links — making it the single
-navigation point even though configs are distributed.
-- ✅ No duplication; no broken convention; developer agents find instructions in their own repo
-- ✅ `ROLES.md` already serves as the team roster — it just needs the explanation and links
-
-**Option D — One dedicated repo per agent + one shared company repo:** Every agent gets their own
-git repository. Coordination agents (`quality-manager`, `teacher`, `fundraising`, `communications`)
-move from `hq/` subdirs into dedicated standalone repos. The `hq/` repo is stripped to purely
-shared coordination content (CONTEXT.md, ROLES.md, BACKLOG.md, PROCESS.md, standups/, design/,
-proposals/) — no agent workspace content at all.
-
-Repo count: 7 agent repos + 1 company repo = **8 repos total** (vs 4 in Options A/C).
+Every agent has its own dedicated git repository with `AGENTS.md` at the repo root. The `hq/` repo is the shared company coordination repo — it holds no agent workspace content. This gives all 7 agents an identical structure: own repo + shared company repo.
 
 ```
 idea-edu-africa/
-  engine           ← engine-dev workspace (unchanged)
-  console-ui       ← console-dev workspace (unchanged)
-  website          ← site-dev workspace (unchanged)
-  quality-manager  ← NEW: own repo (currently hq/quality-manager/)
-  teacher          ← NEW: own repo (currently hq/teacher/)
-  fundraising      ← NEW: own repo (currently hq/fundraising/)
-  communications   ← NEW: own repo (currently hq/communications/)
+  engine           ← engine-dev workspace
+  console-ui       ← console-dev workspace
+  website          ← site-dev workspace
+  quality-manager  ← quality-manager workspace
+  teacher          ← teacher workspace
+  fundraising      ← fundraising workspace
+  communications   ← communications workspace
   hq               ← company repo: CONTEXT.md, ROLES.md, BACKLOG.md,
-                      PROCESS.md, standups/, design/, proposals/
+                      PROCESS.md, standups/, discussions/, design/, proposals/
 ```
 
-Key consequence: `AGENTS.md` co-location now works **uniformly for all 7 agents** — every agent's
-config is at the root of their own repo. The developer/coordinator split disappears entirely.
+The standard Claude Code convention — `AGENTS.md` at the repo root — applies uniformly to all 7 agents without exceptions. Each agent's git history is clean and scoped: teacher guide commits live only in the teacher repo, engineering commits only in engine. Adding a new agent means creating a new repo.
 
-- ✅ Structural confusion disappears — every agent has the exact same setup (own repo + company repo)
-- ✅ Standard Claude Code convention (`AGENTS.md` at repo root) applies to all agents without exceptions
-- ✅ Clean git history per agent: teacher guide commits live only in the teacher repo
-- ✅ Independent per-repo access control if needed (e.g. make teacher guides public separately)
-- ✅ Company repo is purely coordination — no workspace noise
-- ✅ Pattern scales cleanly: adding a new agent = create a new repo
-- ❌ Four additional GitHub repos to create, configure, and maintain (branch protection ×4)
-- ❌ Coordination agents' path to shared files changes: BACKLOG.md is now in the company repo
-  (`/home/node/workspace/hq/BACKLOG.md`) rather than `../BACKLOG.md` — a minor AGENTS.md update,
-  not a real obstacle since all repos are mounted in the same container directory
-- ❌ One-time migration effort: move content out of `hq/` subdirs into new repos
-
-→ **Decision:** Option D — one dedicated repo per agent + one shared company repo (`hq`). See Decision #11 in the Decisions section.
+All 8 repos are mounted into the same Docker container directory (`/home/node/workspace/`), so every agent can read and write across the full project tree regardless of repo boundaries. Separate repos means separate git histories, not filesystem isolation.
 
 ---
 
 ## Shared Agent Knowledge — CONTEXT.md
 
-### The problem
+Every agent needs a shared understanding of the product: what App Disks are, how the Engine and Console work, what offline-first means in practice. This knowledge belongs in one place.
 
-Technical knowledge about App Disks, Engine, Console, offline-first operation, and data
-synchronization currently lives primarily in `engine-dev/AGENTS.md`. But every agent needs this
-understanding:
+`hq/CONTEXT.md` is the shared knowledge base for all agents. All agents read it at the start of each session, referenced in their HEARTBEAT.md. It covers:
 
-- `teacher` must explain app usage accurately to non-technical school staff
-- `fundraising` must describe the solution credibly to grant reviewers
-- `communications` must explain how the system works in public-facing writing
-- `quality-manager` must catch when changes break architectural principles (e.g. offline-first)
-- `site-dev` must present the product accurately on the website
-
-`SOUL.md` (shared across all agents) covers values and behaviour but not factual product knowledge.
-Individual `AGENTS.md` files describe roles, not the product. There is no shared knowledge base.
-
-### Options considered
-
-**Option A — Extend SOUL.md:** Add "What we build" and "How it works" sections to the existing
-shared SOUL.md.
-- ✅ Already loaded by all agents; zero new files
-- ❌ Conflates values/behaviour with factual product knowledge; SOUL.md becomes harder to maintain
-and update as the product evolves
-
-**Option B — Per-agent CONTEXT.md in each sandbox:** Write a tailored `CONTEXT.md` per agent,
-calibrated to each role's depth of technical knowledge.
-- ✅ Can be tailored (engine-dev gets deep technical detail; fundraising gets high-level)
-- ❌ Seven copies to maintain; any factual update requires seven edits; drift is inevitable
-
-**Option C — Single `hq/CONTEXT.md` read by all agents (selected):** One file in the HQ repo.
-All agents read it at the start of each session (referenced in HEARTBEAT.md). Covers:
 1. **Mission** — Who IDEA serves, what problem it solves, why it matters
 2. **Solution overview** — What the system does at a high level
-3. **Key concepts** — Engine, Console, App Disks, offline-first, data synchronization, physical web
-   app management
+3. **Key concepts** — Engine, Console, App Disks, offline-first, data synchronization, physical web app management
 4. **Guiding principles** — Reliability > features, no internet dependency, teacher-friendly
-- ✅ Single source of truth; one edit propagates to all agents via normal git/PR workflow
-- ✅ Factual knowledge cleanly separated from values (SOUL.md) and role instructions (AGENTS.md)
-- ✅ Maintained like any other HQ document — QM reviews for factual accuracy
 
-**Option D — Embed context in each AGENTS.md:** Expand the "Context" section in every role
-definition file. Some AGENTS.md files already partially do this.
-- ✅ No new files
-- ❌ Duplication across seven files; no guarantee coordination agents are updated when technical
-  concepts evolve; becomes inconsistent over time
+The knowledge layer is cleanly separated across three files:
+- **SOUL.md** — values and behaviour (shared across all agents via sandbox)
+- **AGENTS.md** — role-specific instructions (at each agent's repo root)
+- **CONTEXT.md** — factual product knowledge (single file in `hq/`, read by all)
 
-→ **Decision:** Option C — single `hq/CONTEXT.md` as shared knowledge base. SOUL.md for values, AGENTS.md for role instructions, CONTEXT.md for product knowledge. All agents read CONTEXT.md at session start via HEARTBEAT.md. See Decision #5 in the Decisions section.
-
----
-
-## Decisions
-
-All resolved decisions are recorded here. Each section in this document that discusses options ends with a cross-reference to the relevant decision number.
-
-1. **Agent naming** ✅ Rename `engine` → `engine-dev`; `console-ui` → `console-dev`; website agent is `site-dev`.
-
-2. **Standup trigger** ✅ Manual for now — `./standup morning`. Automation via n8n can be added once the base setup is stable.
-
-3. **Multi-agent dialogue format** ✅ Option B (sequential roundtable standup) + Option D (async discussion threads in `hq/discussions/`) as a complementary mechanism. The @-mention convention connects them. Full details in the Multi-Agent Dialogue section.
-
-4. **Agent memory** ✅ Structured docs in git. OpenClaw's built-in memory system is not used. All retained knowledge lives in `AGENTS.md` files and `hq/CONTEXT.md`, updated through the normal PR and CEO approval workflow. An agent that learns something worth keeping proposes the update — it does not remember silently. Full details in the Agent Memory section.
-
-5. **Shared knowledge** ✅ Option C — single `hq/CONTEXT.md` as the shared knowledge base for all agents. SOUL.md for values/behaviour, AGENTS.md for role-specific instructions, CONTEXT.md for factual product knowledge. All agents read CONTEXT.md at session start via HEARTBEAT.md. Full details in the Shared Agent Knowledge section.
-
-6. **HQ and all repos** ✅ Public. All repos under the GitHub org will be public.
-
-7. **GitHub organisation name** ✅ **`idea-edu-africa`** (not yet created). Repos currently live under the personal account `koenswings` and will be transferred to the org when it is created. See availability table:
-
-   | Name | Available? |
-   |------|-----------|
-   | `idea-africa` | ❌ Taken (existing "IDEA Africa" org) |
-   | `idea-edu-africa` | ✅ Available |
-   | `idea-offline` | ✅ Available |
-   | `offline-schools` | ✅ Available |
-   | `appdocker` | ❌ Taken |
-
-8. **Teacher guides delivery** ✅ All three: served from Engine, embedded in Console UI, printable PDFs.
-
-9. **Website technology** ✅ Static site (Astro or Hugo — TBC) hosted on GitHub Pages.
-
-10. **Agent skills** ✅ Four skills configured: `/council-review` (quality-manager), `/propose` (all agents), `/standup` (all agents), `/research` (fundraising and communications). Full details in the Agent Skills section.
-
-11. **File system structure** ✅ Option D — one dedicated git repo per agent + one shared company repo (`hq`). All 7 agents have their `AGENTS.md` at the root of their own repo. The `hq/` repo contains coordination content only (no agent workspaces). Repos: `engine`, `console-ui`, `website`, `quality-manager`, `teacher`, `fundraising`, `communications`, `hq`. Full details in the File System Structure section.
-
-12. **Operating layer** ✅ Mission Control is adopted from day one as the primary task management interface. The Kanban board (`Planning → Inbox → Assigned → In Progress → Review → Done`) is the source of truth for all task state. Individual agent tabs handle plan approval. GitHub handles PR review and merge.
-
-13. **BACKLOG.md** ✅ Auto-exported from Mission Control via `hq/scripts/export-backlog.sh`. Not manually maintained. Committed to the hq repo as a read-only, human-readable backup for agents and audit purposes. Full details in the Mission Control section.
+Any factual update to the product propagates to all agents by editing one file. The Quality Manager reviews CONTEXT.md changes for accuracy as part of the normal PR flow.
 
 ---
 
@@ -871,7 +745,7 @@ Growing the backlog is a collaborative, PR-driven process. Full details in `hq/P
 
 3. **CEO decides** — merges (approved → backlog), requests changes, or closes (declined).
 
-4. **Backlog entry** — on merge, a concise entry is added to `hq/BACKLOG.md` with a link to the proposal.
+4. **Task creation** — on merge, the CEO creates a task in Mission Control and assigns it to the relevant agent. `BACKLOG.md` is regenerated by running `hq/scripts/export-backlog.sh` and committing the output.
 
 ### Why this works
 
@@ -899,25 +773,24 @@ Growing the backlog is a collaborative, PR-driven process. Full details in `hq/P
 
 All repos currently under personal account `koenswings`. Will transfer to `idea-edu-africa` org when it is created.
 
-Total: **8 repos** (7 agent repos + 1 shared `hq` repo). See Decision #11.
+Total: **8 repos** — 7 agent repos + 1 shared `hq` repo.
 
 ---
 
 ## What Needs to Happen (in order)
 
-1. ✅ Decide answers to the open questions above
-2. ✅ Set up project repos: `engine`, `openclaw`, `idea-proposal` on GitHub
-3. ✅ Set up VS Code / Claude Code / tmux per-project session pattern across all three projects
-4. Review and approve the full proposal in `/home/pi/projects/idea-proposal/` (AGENTS.md files, sandbox files, openclaw.json)
-5. Create GitHub Organisation (`idea-edu-africa`) and transfer existing repos; create new repos: `console-ui`, `website`, `quality-manager`, `teacher`, `fundraising`, `communications`, `hq` (7 new repos)
-6. Create project directories on the Pi: `console-ui/`, `website/`, `quality-manager/`, `teacher/`, `fundraising/`, `communications/`, `hq/` with subdirs
-7. Copy approved `AGENTS.md` files from proposal into each workspace
-8. Apply updated `openclaw.json` (rename existing agents + add new ones)
-9. Copy sandbox files (IDENTITY, SOUL, USER, TOOLS, HEARTBEAT, BOOTSTRAP) into each agent's OpenClaw sandbox
-10. Restart OpenClaw: `sudo docker restart openclaw-gateway`
-11. Set up branch protection on `main` in each GitHub repo (CEO-only merge)
-12. Pair your browser with each new agent in the OpenClaw UI
-13. Run the BOOTSTRAP session for each new agent to confirm identity and orientation
+1. ✅ Set up project repos: `engine`, `openclaw`, `idea-proposal` on GitHub
+2. ✅ Set up VS Code / Claude Code / tmux per-project session pattern across all three projects
+3. Review and approve the full proposal in `/home/pi/projects/idea-proposal/` (AGENTS.md files, sandbox files, openclaw.json)
+4. Create GitHub Organisation (`idea-edu-africa`) and transfer existing repos; create new repos: `console-ui`, `website`, `quality-manager`, `teacher`, `fundraising`, `communications`, `hq` (7 new repos)
+5. Create project directories on the Pi: `console-ui/`, `website/`, `quality-manager/`, `teacher/`, `fundraising/`, `communications/`, `hq/` with subdirs
+6. Copy approved `AGENTS.md` files from proposal into each workspace
+7. Apply updated `openclaw.json` (rename existing agents + add new ones)
+8. Copy sandbox files (IDENTITY, SOUL, USER, TOOLS, HEARTBEAT, BOOTSTRAP) into each agent's OpenClaw sandbox
+9. Restart OpenClaw: `sudo docker restart openclaw-gateway`
+10. Set up branch protection on `main` in each GitHub repo (CEO-only merge)
+11. Pair your browser with each new agent in the OpenClaw UI
+12. Run the BOOTSTRAP session for each new agent to confirm identity and orientation
 
 ---
 
@@ -927,11 +800,11 @@ Total: **8 repos** (7 agent repos + 1 shared `hq` repo). See Decision #11.
 - [x] Decide GitHub org name → `idea-edu-africa`
 - [x] Set up `engine`, `openclaw`, `idea-proposal` repos on GitHub (currently under `koenswings`)
 - [x] Set up VS Code / Claude Code / tmux per-project session pattern
-- [x] Decide AGENTS.md file structure → Option D: one repo per agent (see File System Structure section, Decision #11)
-- [x] Decide shared knowledge approach → single `hq/CONTEXT.md` (see Shared Agent Knowledge section, Decision #5)
-- [x] Decide standup model → roundtable format + discussion threads (see Multi-Agent Dialogue section, Decision #3)
-- [x] Decide operating layer → Mission Control from day one (see Mission Control section, Decision #12)
-- [x] Decide BACKLOG.md approach → auto-export from MC via script (Decision #13)
+- [x] AGENTS.md file structure → one repo per agent (see File System Structure section)
+- [x] Shared knowledge → single `hq/CONTEXT.md` (see Shared Agent Knowledge section)
+- [x] Standup model → roundtable format + discussion threads (see Multi-Agent Dialogue section)
+- [x] Operating layer → Mission Control from day one (see Mission Control section)
+- [x] BACKLOG.md → auto-export from MC via script (see Mission Control section)
 - [ ] Review and approve proposal in `/home/pi/projects/idea-proposal/`
 - [ ] Create `hq/CONTEXT.md` — draft covering mission, solution overview, key concepts, guiding principles
 - [ ] Create `hq/prompting-guide-opus.md` — Opus 4.6 prompting best practices from Anthropic docs
@@ -946,6 +819,7 @@ Total: **8 repos** (7 agent repos + 1 shared `hq` repo). See Decision #11.
 - [ ] Deploy Mission Control alongside OpenClaw; configure board hierarchy (IDEA org → Engineering / HQ boards → per-agent boards)
 - [ ] Migrate existing backlog items from BACKLOG.md into Mission Control
 - [ ] BOOTSTRAP sessions for all new agents
+- [ ] Define OpenClaw cron and heartbeat schedule for all agents: morning standup seed, BACKLOG.md export, and per-agent heartbeat intervals and active hours
 
 ### Engine
 - [ ] Review and improve Solution Description
