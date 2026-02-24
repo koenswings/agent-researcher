@@ -279,24 +279,24 @@ For complex engine or console changes, a third gate applies:
 
 | Tool | Purpose | When you use it |
 |------|---------|-----------------|
-| **Mission Control** | Live Kanban across all 7 agents; task creation and assignment; activity timeline | Daily — primary dispatch surface |
-| **Individual agent tabs (OpenClaw UI)** | Approve plans, have in-depth sessions, run ad-hoc tasks | After each task assignment, and for complex conversations |
+| **Mission Control** | Live Kanban across all 7 agents; task dispatch; agent chat and plan approval; activity timeline | Daily — the single interface for all agent interaction |
 | **GitHub** | Review and merge PRs (code and documents) | Whenever agents raise PRs |
 | **Terminal (SSH / Tailscale SSH)** | Pi administration, Docker, logs | Occasional |
+| **OpenClaw Control UI** | Low-level fallback if Mission Control is unavailable | Rarely |
 
-Access Mission Control at `https://openclaw-pi.tail2d60.ts.net:4000`. Access individual agent tabs at `https://openclaw-pi.tail2d60.ts.net`.
+Access Mission Control at `https://openclaw-pi.tail2d60.ts.net:4000`. OpenClaw Control UI at `https://openclaw-pi.tail2d60.ts.net`.
 
 ### Using Mission Control + Agent Tabs
 
 **Task dispatch happens in Mission Control.** Create a task, assign it to the relevant agent. The Kanban board gives a single-screen view of all 7 agents' work simultaneously.
 
-**Plan approval still happens in individual agent tabs.** After assigning a task in MC, open that agent's chat tab to read and approve its plan before anything executes. `DEFAULT_PERMISSION_MODE=plan` is unchanged — agents always stop and wait for your approval.
+**Plan approval happens in Mission Control's agent chat.** After assigning a task, open the agent's chat within MC to read and approve its plan before anything executes. `DEFAULT_PERMISSION_MODE=plan` is unchanged — agents always stop and wait for your approval.
 
 | Step | Where | What you do |
 |------|-------|-------------|
 | **Assign** | Mission Control | Create task, assign to agent, set priority |
-| **Approve plan** | Agent tab (OpenClaw UI) | Read plan, type "go ahead" or modify |
-| **Observe** | Agent tab | Watch tool calls, file edits, git operations stream in real time |
+| **Approve plan** | Mission Control (agent chat) | Read plan, type "go ahead" or modify |
+| **Observe** | Mission Control (agent chat) | Watch tool calls, file edits, git operations stream in real time |
 | **Accept work** | GitHub | Review PR, merge or request changes |
 
 The activity timeline in MC partially replaces the standup script — scan it each morning to see what ran overnight.
@@ -438,7 +438,7 @@ The rest of the setup is unaffected: `openclaw.json`, `AGENTS.md` files, sandbox
 
 Task dispatch happens in the Kanban board. Create a task, assign it to the relevant agent. The board columns — `Planning → Inbox → Assigned → In Progress → Review → Done` — give a single-screen view of all 7 agents' work simultaneously.
 
-Plan approval still happens in individual agent tabs. After assigning a task in MC, open that agent's chat tab to read and approve its plan before anything executes. `DEFAULT_PERMISSION_MODE=plan` is unchanged — MC dispatches work; it does not replace the approval layer.
+Plan approval happens in Mission Control's agent chat. After assigning a task, open the agent's chat within MC to read and approve its plan before anything executes. `DEFAULT_PERMISSION_MODE=plan` is unchanged — MC is both the dispatch and the approval layer.
 
 The activity timeline is a real-time SSE-fed log across all agents. Scanning it each morning gives a quick view of overnight activity. The roundtable standup (below) provides the deeper daily dialogue; MC's timeline provides the live pulse.
 
