@@ -10,12 +10,15 @@ he approves all plans before execution and merges all PRs.
 
 | Agent id | Repo | Workspace (container) | Scope |
 |----------|------|-----------------------|-------|
-| `engine-dev` | `idea-edu-africa/agent-engine-dev` | `/home/node/workspace/agents/agent-engine-dev` | Engine software: TypeScript, Automerge, Docker, Raspberry Pi |
-| `console-dev` | `idea-edu-africa/agent-console-dev` | `/home/node/workspace/agents/agent-console-dev` | Console UI: Solid.js, Chrome Extension |
-| `site-dev` | `idea-edu-africa/agent-site-dev` | `/home/node/workspace/agents/agent-site-dev` | Public website: Astro/Hugo, GitHub Pages |
-| `quality-manager` | `idea-edu-africa/agent-quality-manager` | `/home/node/workspace/agents/agent-quality-manager` | PR review across all code repos; cross-project consistency |
-| `programme-manager` | `idea-edu-africa/agent-programme-manager` | `/home/node/workspace/agents/agent-programme-manager` | Field coordination, teacher guides, supporter comms, fundraising |
-| `researcher` | `idea-edu-africa/agent-researcher` | `/home/node/workspace/agents/agent-researcher` | Strategic advisor to CEO — org structure, governance (CEO-only) |
+| `engine-dev` | `koenswings/agent-engine-dev` | `/home/node/workspace/agents/agent-engine-dev` | Engine software: TypeScript, Automerge, Docker, Raspberry Pi |
+| `console-dev` | `koenswings/agent-console-dev` | `/home/node/workspace/agents/agent-console-dev` | Console UI: Solid.js, Chrome Extension |
+| `site-dev` | `koenswings/agent-site-dev` | `/home/node/workspace/agents/agent-site-dev` | Public website: Astro/Hugo, GitHub Pages |
+| `quality-manager` | `koenswings/agent-quality-manager` | `/home/node/workspace/agents/agent-quality-manager` | PR review across all code repos; cross-project consistency |
+| `programme-manager` | `koenswings/agent-programme-manager` | `/home/node/workspace/agents/agent-programme-manager` | Field coordination, teacher guides, supporter comms, fundraising |
+| `researcher` | `koenswings/agent-researcher` | `/home/node/workspace/agents/agent-researcher` | Strategic advisor to CEO — org structure, governance (CEO-only) |
+
+> **Note:** Repos are currently under `koenswings` while the GitHub organisation name is being
+> finalised. Once the org is created, all repos will be transferred and these paths will update.
 
 The `idea` repo (this repo) is the shared org root: `CONTEXT.md`, `ROLES.md`, `BACKLOG.md`,
 `PROCESS.md`, `standups/`, `discussions/`, `design/`, `proposals/`.

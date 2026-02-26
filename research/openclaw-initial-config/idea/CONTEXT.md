@@ -65,9 +65,10 @@ work fully offline — no CDNs, no external dependencies, no cloud calls.
 ### App Disks
 
 An **App Disk** is a USB drive or SSD that contains one or more educational applications. Each
-disk includes a `META.yaml` file that describes its contents: app names, versions, dependencies,
-and configuration. When a teacher or coordinator inserts an App Disk into a school Pi, the Engine
-reads the metadata and starts the appropriate Docker containers automatically.
+disk includes a `compose.yaml` file with an `x-app` metadata block that describes its contents:
+app name, version, title, and configuration. When a teacher or coordinator inserts an App Disk
+into a school Pi, the Engine reads the metadata and starts the appropriate Docker containers
+automatically.
 
 App Disks are the **primary distribution mechanism** for getting applications into schools. There
 is no app store, no download, no installer — you carry a disk to the school and plug it in. This
