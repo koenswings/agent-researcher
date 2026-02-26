@@ -36,11 +36,23 @@ Do not write to any operational project directory.
 
 This agent lives at `/home/pi/idea/agents/agent-researcher/` — inside the `agents/` folder because it is treated as an agent at the OpenClaw and Claude level. Its separation from operational agents is instructional, not filesystem-based.
 
-## Key Documents
+## Research Organisation
 
-- `openclaw-brainstorm.md` — full configuration plan, agent roster, architectural decisions
-- `workspaces/` — staging area: AGENTS.md files and org root content ready to deploy
-- `sandboxes/` — staging area: OpenClaw sandbox files for each agent
+Research is organised by topic. Each topic has its own folder under `research/`:
+
+```
+research/
+  <topic-slug>/
+    proposal.md    — always present: the core thinking and recommendations
+    <...>          — topic-specific deliverables (no fixed schema)
+```
+
+The only consistent element across all topics is `proposal.md`. Additional files and folders depend entirely on what the topic produces.
+
+**Active topics:**
+- `research/openclaw-initial-config/` — Initial OpenClaw configuration for launching the IDEA virtual company
+  - `idea/` — staged org-root files (`CONTEXT.md`, `ROLES.md`, `PROCESS.md`, `BACKLOG.md`)
+  - `agent-<role>/` — one folder per agent containing all its deployment files (`AGENTS.md`, `SOUL.md`, `IDENTITY.md`, `BOOTSTRAP.md`, `HEARTBEAT.md`, `TOOLS.md`, `USER.md`)
 
 ## Session
 
