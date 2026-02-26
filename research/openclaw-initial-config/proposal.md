@@ -27,6 +27,7 @@ This document describes how OpenClaw is configured to run the IDEA virtual compa
 - [Security Practices for External Content Ingestion](#security-practices-for-external-content-ingestion)
 - [Prompt Engineering Guide](#prompt-engineering-guide)
 - [Complementary Open Source Tools](#complementary-open-source-tools)
+- [app-openclaw — Platform as an App Disk](#app-openclaw--platform-as-an-app-disk)
 - [Project Repositories](#project-repositories)
 - [What Needs to Happen (in order)](#what-needs-to-happen-in-order)
 - [Current Backlog](#current-backlog)
@@ -784,6 +785,44 @@ Visibility into Pi health (CPU, memory, temperature, disk usage) — relevant fo
 
 ---
 
+## app-openclaw — Platform as an App Disk
+
+The OpenClaw + Mission Control + Tailscale combination is packaged as an App Disk following the standard `app-*` repo template. When provisioned onto a permanently attached USB SSD, it turns any Pi into a full AI-assisted development machine.
+
+### Repo structure
+
+```
+app-openclaw/
+├── compose.yaml        ← OpenClaw + Mission Control + Tailscale services,
+│                         with x-app metadata block (name, version, title, etc.)
+├── init_data.tar.gz    ← Platform-only bootstrap: empty openclaw.json template,
+│                         startup hooks — no IDEA-specific content
+└── README.md           ← References idea/scripts/setup.sh for org configuration
+```
+
+### System disk model
+
+Unlike school apps (Kolibri, Nextcloud) which run from a dockable USB disk and stop when it is removed, OpenClaw must run persistently. The solution is a **permanently attached USB SSD** used as the system disk:
+
+1. Provision the SSD using `build-app-instance`: `./build-app-instance openclaw --disk sda --instance idea --git idea-edu-africa --tag 1.0.0`
+2. The Engine detects the SSD on every boot via the udev rule and chokidar file watcher — the app auto-starts
+3. Run `idea/scripts/setup.sh` once to layer the IDEA-specific workspace on top
+4. Enter credentials manually (Tailscale auth key, WhatsApp QR scan, bearer token)
+
+### Startup behaviour — one open question
+
+The Engine's USB monitor uses chokidar to watch `/dev/engine`. By default, chokidar fires `add` events for files that already exist when the watcher starts — meaning an already-attached SSD would be processed on every Engine boot. This is the expected behaviour but **has not yet been tested** in this configuration.
+
+If the initial scan is suppressed, a small addition to `src/start.ts` closes the gap: process any devices present in `/dev/engine` that are not yet in the Automerge store. This is a minimal Engine PR, not an architectural change.
+
+**A test with a trivial app on a permanently attached USB drive must be completed before building app-openclaw around this pattern.**
+
+### IDEA-specific configuration
+
+IDEA-specific config (agent roster, workspace structure, setup script) lives in the `idea` repo under `idea/openclaw/` — not baked into the App Disk. This keeps `app-openclaw` generic and reusable, while `idea` remains the single source of truth for how the org is configured.
+
+---
+
 ## Project Repositories
 
 All repos under `idea-edu-africa` GitHub org. Repos currently under personal account `koenswings` will be transferred when the org is created.
@@ -858,13 +897,15 @@ Total: **8 repos** — 1 org root + 5 operational agent repos + 1 researcher rep
 - [ ] Define OpenClaw cron and heartbeat schedule for all agents: morning standup seed, BACKLOG.md export, and per-agent heartbeat intervals and active hours
 
 ### app-openclaw / Platform
-- [ ] Create `idea-edu-africa/app-openclaw` repo
-- [ ] Write `init_data.tar.gz` contents: Docker Compose for OpenClaw + Mission Control + Tailscale, empty `openclaw.json` template, startup scripts — no IDEA-specific content
+- [ ] **Test first:** validate permanently attached USB SSD as system disk — provision a trivial app with `build-app-instance`, reboot, confirm instance auto-starts; if not, submit Engine PR to process existing `/dev/engine` devices on startup
+- [ ] Create `idea-edu-africa/app-openclaw` repo (rename + restructure existing `openclaw` repo; history preserved)
+- [ ] Write `compose.yaml` with `x-app` metadata block; write `init_data.tar.gz` — platform bootstrap only (empty `openclaw.json` template, startup hooks), no IDEA-specific content
 - [ ] Add `idea/openclaw/` folder to `idea` repo: `openclaw.json` (agent roster, no tokens), `compose-additions.yaml` (Mission Control service block)
 - [ ] Write `idea/scripts/setup.sh`: clones `idea` + all agent repos, applies IDEA openclaw config, configures Mission Control board hierarchy
-- [ ] Write `idea/openclaw/README.md`: step-by-step installation guide — dock App Disk → run setup script → enter credentials (Tailscale, WhatsApp, tokens) → bootstrap agent sessions
+- [ ] Write `idea/openclaw/README.md`: step-by-step installation guide — attach USB SSD → provision with `build-app-instance` → reboot → run setup script → enter credentials (Tailscale, WhatsApp, tokens) → bootstrap agent sessions
 
 ### Engine
+- [ ] Test permanently attached USB SSD as system disk: provision trivial app with `build-app-instance`, reboot Pi, confirm instance auto-starts via existing chokidar/udev mechanism; if startup gap found, submit PR adding device scan to `src/start.ts`
 - [ ] Review and improve Solution Description
 - [ ] Update Architecture doc from Solution Description
 - [ ] Remove Docker dev environment support from docs and code
