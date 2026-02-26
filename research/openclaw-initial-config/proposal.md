@@ -798,8 +798,9 @@ All repos under `idea-edu-africa` GitHub org. Repos currently under personal acc
 | `agent-programme-manager` | `idea-edu-africa/agent-programme-manager` | (to create) | New |
 | `agent-researcher` | `idea-edu-africa/agent-researcher` | `koenswings/idea-proposal` | Rename + transfer |
 | `openclaw` | `idea-edu-africa/openclaw` | `koenswings/openclaw` | Transfer only |
+| `app-openclaw` | `idea-edu-africa/app-openclaw` | (to create) | New — App Disk packaging OpenClaw + Mission Control + Tailscale |
 
-Total: **7 repos** — 1 org root + 5 operational agent repos + 1 researcher repo. Plus `openclaw` for platform config.
+Total: **8 repos** — 1 org root + 5 operational agent repos + 1 researcher repo + `openclaw` platform config + `app-openclaw` App Disk.
 
 ---
 
@@ -822,6 +823,8 @@ Total: **7 repos** — 1 org root + 5 operational agent repos + 1 researcher rep
 13. Set up branch protection on `main` in each GitHub repo (CEO-only merge)
 14. Pair your browser with each new agent in the OpenClaw UI
 15. Run the BOOTSTRAP session for each new agent to confirm identity and orientation
+16. Create `app-openclaw` repo: Docker Compose packaging OpenClaw + Mission Control + Tailscale as a self-contained App Disk (`init_data.tar.gz` contains platform only — no IDEA-specific config)
+17. Add `idea/openclaw/` to the `idea` repo: committed, secrets-free reference config (`openclaw.json` agent roster, `compose-additions.yaml`); create `idea/scripts/setup.sh` to provision a fresh App Disk into a fully configured IDEA development machine; document the full installation process in `idea/openclaw/README.md`
 
 ---
 
@@ -853,6 +856,13 @@ Total: **7 repos** — 1 org root + 5 operational agent repos + 1 researcher rep
 - [ ] Migrate existing backlog items from BACKLOG.md into Mission Control
 - [ ] BOOTSTRAP sessions for all new agents
 - [ ] Define OpenClaw cron and heartbeat schedule for all agents: morning standup seed, BACKLOG.md export, and per-agent heartbeat intervals and active hours
+
+### app-openclaw / Platform
+- [ ] Create `idea-edu-africa/app-openclaw` repo
+- [ ] Write `init_data.tar.gz` contents: Docker Compose for OpenClaw + Mission Control + Tailscale, empty `openclaw.json` template, startup scripts — no IDEA-specific content
+- [ ] Add `idea/openclaw/` folder to `idea` repo: `openclaw.json` (agent roster, no tokens), `compose-additions.yaml` (Mission Control service block)
+- [ ] Write `idea/scripts/setup.sh`: clones `idea` + all agent repos, applies IDEA openclaw config, configures Mission Control board hierarchy
+- [ ] Write `idea/openclaw/README.md`: step-by-step installation guide — dock App Disk → run setup script → enter credentials (Tailscale, WhatsApp, tokens) → bootstrap agent sessions
 
 ### Engine
 - [ ] Review and improve Solution Description
