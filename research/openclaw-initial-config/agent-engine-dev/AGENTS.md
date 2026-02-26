@@ -42,9 +42,9 @@ pnpm dev                              # Run in dev mode (watches for changes)
 pnpm build                            # Compile TypeScript
 pnpm test                             # Run tests
 
-./scripts/client --engine <host>       # Connect CLI to running engine
-./scripts/sync-engine --machine <host> # Sync local code to remote engine
-./scripts/reset-engine                 # Reset engine state (--data / --identity / --meta / --code / --all)
+./script/client --engine <host>       # Connect CLI to running engine
+./script/sync-engine --machine <host> # Sync local code to remote engine
+./script/reset-engine                 # Reset engine state (--data / --identity / --meta / --code / --all)
 ```
 
 ## Development Workflow
