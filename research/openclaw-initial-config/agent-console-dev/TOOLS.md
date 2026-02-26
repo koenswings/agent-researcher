@@ -3,9 +3,9 @@
 ## Environment
 
 - **Projects root (container):** `/home/node/workspace/`
-- **Console repo:** `/home/node/workspace/console-ui`
-- **Engine repo (read-only reference):** `/home/node/workspace/engine`
-- **HQ repo:** `/home/node/workspace/hq`
+- **Console repo:** `/home/node/workspace/agents/agent-console-dev`
+- **Engine repo (read-only reference):** `/home/node/workspace/agents/agent-engine-dev`
+- **Org root:** `/home/node/workspace/` (CONTEXT.md, BACKLOG.md, proposals/, etc.)
 
 ## Local Engine for Testing
 
