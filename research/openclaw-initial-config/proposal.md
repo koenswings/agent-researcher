@@ -848,12 +848,12 @@ Total: **8 repos** — 1 org root + 5 operational agent repos + 1 researcher rep
 1. ✅ Set up project repos: `engine`, `openclaw`, `idea-proposal` on GitHub
 2. ✅ Set up VS Code / Claude Code / tmux per-project session pattern across all three projects
 3. Review and approve the full proposal in `/home/pi/idea/agents/agent-researcher/` (AGENTS.md files, sandbox files, openclaw.json)
-4. Create `/home/pi/idea/` directory structure on the Pi: org root files + `agents/` subfolder
-5. Move existing repos into new structure:
+4. ✅ Create `/home/pi/idea/` directory structure on the Pi: org root files + `agents/` subfolder
+5. ✅ Move existing repos into new structure:
    - `/home/pi/projects/engine` → `/home/pi/idea/agents/agent-engine-dev/`
    - `/home/pi/projects/idea-proposal` → `/home/pi/idea/agents/agent-researcher/`
 6. Update Docker volume mount in `compose.yaml`: `/home/pi/projects` → `/home/pi/idea`
-7. Create GitHub Organisation (`idea-edu-africa`); rename + transfer `engine` → `agent-engine-dev`, `idea-proposal` → `agent-researcher`, `openclaw` → `openclaw`; create new repos: `idea`, `agent-console-dev`, `agent-site-dev`, `agent-quality-manager`, `agent-programme-manager`
+7. ✅ (partial) Rename repos on GitHub under `koenswings`: `engine` → `agent-engine-dev`, `openclaw` → `app-openclaw`, `console` → `agent-console-dev`. GitHub org creation and repo transfers deferred until org name is decided.
 8. Create new agent workspace directories: `agents/agent-console-dev/`, `agents/agent-site-dev/`, `agents/agent-quality-manager/`, `agents/agent-programme-manager/`; initialise as git repos cloned from GitHub
 9. Copy approved `AGENTS.md` files from proposal into each workspace
 10. Apply updated `openclaw.json` (rename existing agents + add new ones with updated workspace paths)
@@ -870,8 +870,8 @@ Total: **8 repos** — 1 org root + 5 operational agent repos + 1 researcher rep
 ## Current Backlog
 
 ### HQ / Setup
-- [x] Decide GitHub org name → `idea-edu-africa`
-- [x] Set up `engine`, `openclaw`, `idea-proposal` repos on GitHub (currently under `koenswings`)
+- [x] Decide GitHub org name → decision deferred; proceeding under `koenswings` while name is finalised (candidates: `ideabora`, `ideamoja`, `ideaweza`, `ideakazi`, `edufrica`)
+- [x] Set up `engine`, `openclaw`, `idea-proposal` repos on GitHub (under `koenswings`); renamed to `agent-engine-dev`, `app-openclaw`, `agent-console-dev`
 - [x] Set up VS Code / Claude Code / tmux per-project session pattern
 - [x] AGENTS.md file structure → one repo per agent (see File System Structure section)
 - [x] Shared knowledge → single `CONTEXT.md` at org root (see Shared Agent Knowledge section)
@@ -879,14 +879,15 @@ Total: **8 repos** — 1 org root + 5 operational agent repos + 1 researcher rep
 - [x] Operating layer → Mission Control from day one (see Mission Control section)
 - [x] BACKLOG.md → auto-export from MC via script (see Mission Control section)
 - [ ] Review and approve proposal in `/home/pi/idea/agents/agent-researcher/`
-- [ ] Create `/home/pi/idea/` directory structure on Pi; move `engine` and `idea-proposal` into new paths
+- [x] Create `/home/pi/idea/` directory structure on Pi; move `engine` → `/home/pi/idea/agents/agent-engine-dev/` (Claude memory copied; git remote updated); `agent-researcher` already in place
 - [ ] Update Docker volume mount in `compose.yaml`: `/home/pi/projects` → `/home/pi/idea`
 - [ ] Create `CONTEXT.md` at org root — draft covering mission, solution overview, key concepts, guiding principles
 - [ ] Create `prompting-guide-opus.md` at org root — Opus 4.6 prompting best practices from Anthropic docs
 - [ ] Update `ROLES.md` to link to all 7 repos (1 org root + 5 operational agents + researcher)
 - [ ] Design standup template (`standups/TEMPLATE.md`) and enhance `./standup` script: seed file with context, support @-mention scanning after each agent pass
 - [ ] Write `scripts/export-backlog.sh` — queries MC REST API, generates BACKLOG.md
-- [ ] Create GitHub organisation (`idea-edu-africa`); rename + transfer `engine` → `agent-engine-dev`, `idea-proposal` → `agent-researcher`; create new repos: `idea`, `agent-console-dev`, `agent-site-dev`, `agent-quality-manager`, `agent-programme-manager`
+- [x] Rename repos under `koenswings`: `engine` → `agent-engine-dev`, `openclaw` → `app-openclaw`, `console` → `agent-console-dev`
+- [ ] Create GitHub organisation (once name decided); transfer all repos; create new repos: `idea`, `agent-site-dev`, `agent-quality-manager`, `agent-programme-manager`
 - [ ] Create new agent workspace directories under `agents/`; initialise from GitHub
 - [ ] Configure OpenClaw agents in `openclaw.json`: rename existing entries, add new agents, update all workspace paths to `/home/node/workspace/agents/agent-<role>`
 - [ ] Copy sandbox files (IDENTITY, SOUL, USER, TOOLS, HEARTBEAT, BOOTSTRAP) to each agent
@@ -898,7 +899,8 @@ Total: **8 repos** — 1 org root + 5 operational agent repos + 1 researcher rep
 
 ### app-openclaw / Platform
 - [ ] **Test first:** validate permanently attached USB SSD as system disk — provision a trivial app with `build-app-instance`, reboot, confirm instance auto-starts; if not, submit Engine PR to process existing `/dev/engine` devices on startup
-- [ ] Create `idea-edu-africa/app-openclaw` repo (rename + restructure existing `openclaw` repo; history preserved)
+- [x] Rename `openclaw` → `app-openclaw` on GitHub (history preserved); local git remote updated
+- [ ] Restructure `app-openclaw` repo: add `x-app` metadata block to `compose.yaml`; add `init_data.tar.gz` (platform bootstrap only, no IDEA-specific content)
 - [ ] Write `compose.yaml` with `x-app` metadata block; write `init_data.tar.gz` — platform bootstrap only (empty `openclaw.json` template, startup hooks), no IDEA-specific content
 - [ ] Add `idea/openclaw/` folder to `idea` repo: `openclaw.json` (agent roster, no tokens), `compose-additions.yaml` (Mission Control service block)
 - [ ] Write `idea/scripts/setup.sh`: clones `idea` + all agent repos, applies IDEA openclaw config, configures Mission Control board hierarchy
