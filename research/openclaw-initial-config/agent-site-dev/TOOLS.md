@@ -2,14 +2,14 @@
 
 ## Environment
 
-- **Website repo:** `/home/node/workspace/website`
-- **HQ repo (content source):** `/home/node/workspace/hq`
+- **Website repo:** `/home/node/workspace/agents/agent-site-dev`
+- **Org root:** `/home/node/workspace/` (CONTEXT.md, BACKLOG.md, proposals/, etc.)
 - **GitHub Pages:** deploys automatically from `main` via GitHub Actions
 
 ## Content Source
 
-- Website content drafts from Communications Manager: `hq/communications/website/content-drafts/`
-- Pick up drafts, implement, open PR
+- Website content drafts from Programme Manager: `content-drafts/` in this repo
+- Programme Manager opens PRs with draft files; pick up, implement, open build PR
 
 ## Deployment
 
