@@ -8,37 +8,32 @@
     "list": [
       {
         "id": "engine-dev",
-        "workspace": "/home/node/workspace/engine",
+        "workspace": "/home/node/workspace/agents/agent-engine-dev",
         "sandbox": { "mode": "all", "scope": "agent" }
       },
       {
         "id": "console-dev",
-        "workspace": "/home/node/workspace/console-ui",
+        "workspace": "/home/node/workspace/agents/agent-console-dev",
         "sandbox": { "mode": "all", "scope": "agent" }
       },
       {
         "id": "site-dev",
-        "workspace": "/home/node/workspace/website",
+        "workspace": "/home/node/workspace/agents/agent-site-dev",
         "sandbox": { "mode": "all", "scope": "agent" }
       },
       {
         "id": "quality-manager",
-        "workspace": "/home/node/workspace/hq/quality-manager",
+        "workspace": "/home/node/workspace/agents/agent-quality-manager",
         "sandbox": { "mode": "all", "scope": "agent" }
       },
       {
-        "id": "teacher",
-        "workspace": "/home/node/workspace/hq/teacher",
+        "id": "programme-manager",
+        "workspace": "/home/node/workspace/agents/agent-programme-manager",
         "sandbox": { "mode": "all", "scope": "agent" }
       },
       {
-        "id": "fundraising",
-        "workspace": "/home/node/workspace/hq/fundraising",
-        "sandbox": { "mode": "all", "scope": "agent" }
-      },
-      {
-        "id": "communications",
-        "workspace": "/home/node/workspace/hq/communications",
+        "id": "researcher",
+        "workspace": "/home/node/workspace/agents/agent-researcher",
         "sandbox": { "mode": "all", "scope": "agent" }
       }
     ]

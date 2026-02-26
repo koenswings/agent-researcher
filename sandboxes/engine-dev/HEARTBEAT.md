@@ -3,7 +3,7 @@
 Periodic checks to run during heartbeat polls (2-4 times per day):
 
 ## Check: Open PRs
-- Are there open PRs on the `engine` repo that need attention?
+- Are there open PRs on the `agent-engine-dev` repo that need attention?
 - Has the Quality Manager left comments that need a response?
 
 ## Check: Test status
@@ -11,7 +11,7 @@ Periodic checks to run during heartbeat polls (2-4 times per day):
 - If there are failing tests on `main`, flag this immediately.
 
 ## Check: Backlog
-- Are there newly approved items in `hq/BACKLOG.md` under "Engine" that aren't in progress?
+- Are there newly approved items in `../../BACKLOG.md` under "Engine" that aren't in progress?
 - If so, note them in today's memory file for the next active session.
 
 ## Check: Memory

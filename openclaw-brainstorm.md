@@ -42,15 +42,14 @@ Each IDEA role becomes one agent entry in `openclaw.json`, with its own workspac
 
 | Agent id | Workspace (host path) | Role |
 |----------|----------------------|------|
-| `engine-dev` | `/home/pi/projects/engine` | Engine software developer |
-| `console-dev` | `/home/pi/projects/console-ui` | Console UI developer (Solid.js, Chrome Extension) |
-| `site-dev` | `/home/pi/projects/website` | Builds and maintains the IDEA public website |
-| `quality-manager` | `/home/pi/projects/quality-manager` | Cross-project quality and consistency reviewer |
-| `programme-manager` | `/home/pi/projects/programme-manager` | Field coordination, school support, teacher guides, supporter comms, fundraising |
+| `engine-dev` | `/home/pi/idea/agents/agent-engine-dev` | Engine software developer |
+| `console-dev` | `/home/pi/idea/agents/agent-console-dev` | Console UI developer (Solid.js, Chrome Extension) |
+| `site-dev` | `/home/pi/idea/agents/agent-site-dev` | Builds and maintains the IDEA public website |
+| `quality-manager` | `/home/pi/idea/agents/agent-quality-manager` | Cross-project quality and consistency reviewer |
+| `programme-manager` | `/home/pi/idea/agents/agent-programme-manager` | Field coordination, school support, teacher guides, supporter comms, fundraising |
+| `researcher` | `/home/pi/idea/agents/agent-researcher` | Strategic advisor to the CEO — org structure, governance, long-term direction |
 
-*Note: existing `engine` and `console-ui` entries in openclaw.json must be renamed to `engine-dev` and `console-dev`.*
-
-Each agent has its own dedicated git repository with `AGENTS.md` at the repo root. This applies uniformly to all 5 agents — no exceptions for coordination roles. The `hq/` repo is the shared company coordination repo only.
+Each agent has its own dedicated git repository with `AGENTS.md` at the repo root. This applies uniformly to all 6 agents. The `idea/` repo root is the shared company coordination layer — it holds no agent workspace content.
 
 ### Workspace vs. Shared Filesystem
 
@@ -59,22 +58,22 @@ Two distinct concepts:
 - **`workspace` in `openclaw.json`** — the agent's default working directory; where it "lives" and where its `AGENTS.md` is found.
 - **The Docker volume mount** — what the agent can actually access on disk.
 
-`/home/pi/projects` is mounted into the container as `/home/node/workspace`. All agent workspaces are subdirectories of that mount. Because they all run inside the same container against the same mount, every agent can read and write anywhere under `/home/node/workspace/` — not just its own workspace subdirectory.
+`/home/pi/idea` is mounted into the container as `/home/node/workspace`. All agent workspaces are subdirectories of that mount. Because they all run inside the same container against the same mount, every agent can read and write anywhere under `/home/node/workspace/` — not just its own workspace subdirectory.
 
-This is why the quality-manager (workspace: `/home/node/workspace/quality-manager`) can read `../engine` or `../console-ui` — the full project tree is visible above it.
+This is why the quality-manager (workspace: `/home/node/workspace/agents/agent-quality-manager`) can read `../../agents/agent-engine-dev` or the org root coordination files at `../../CONTEXT.md` — the full project tree is visible above it.
 
-**Crucially, this is not changed by using separate git repos.** Whether `engine`, `console-ui`, and `hq` are separate repositories or a monorepo makes no difference to the Docker mount. Separate repos means separate git histories; it does not mean filesystem isolation. The shared workspace is the mount, not the git layout.
+**Crucially, this is not changed by using separate git repos.** Whether the agent repos and the org root are separate repositories or a monorepo makes no difference to the Docker mount. Separate repos means separate git histories; it does not mean filesystem isolation. The shared workspace is the mount, not the git layout.
 
 ---
 
-## The HQ Directory
+## The Org Root — idea/
 
-`/home/pi/projects/hq/` is the company's coordination hub. It is a git repo in its own right, containing shared coordination content only — no agent workspaces.
+`/home/pi/idea/` is both the Docker mount root and the company's coordination hub. It is a git repo in its own right. The Docker volume mount maps this directory to `/home/node/workspace/` inside the container — so the org root IS the workspace root. It contains shared coordination content and the `agents/` subfolder housing all agent repos.
 
 ```
-hq/
+idea/                             ← /home/node/workspace/ inside container
   BACKLOG.md                      ← auto-exported from Mission Control (read-only; do not edit manually)
-  ROLES.md                        ← agent roster with links to all 8 repos
+  ROLES.md                        ← agent roster with links to all repos
   CONTEXT.md                      ← shared knowledge: mission, solution, key concepts (read by all agents)
   PROCESS.md                      ← how we work: proposals, approvals, task dispatch
   prompting-guide-opus.md         ← Opus 4.6 prompting best practices; referenced when agents update AGENTS.md
@@ -86,9 +85,18 @@ hq/
     YYYY-MM-DD-<topic>.md
   scripts/
     export-backlog.sh             ← queries Mission Control API; regenerates BACKLOG.md
+  agents/
+    agent-engine-dev/             ← engine-dev workspace (independent git repo)
+    agent-console-dev/            ← console-dev workspace (independent git repo)
+    agent-site-dev/               ← site-dev workspace (independent git repo)
+    agent-quality-manager/        ← quality-manager workspace (independent git repo)
+    agent-programme-manager/      ← programme-manager workspace (independent git repo)
+    agent-researcher/             ← researcher workspace (independent git repo; CEO-only)
 ```
 
-Each coordination agent (`quality-manager`, `programme-manager`) has its own dedicated git repository at `/home/pi/projects/<agent>/`, with `AGENTS.md` at the root and their working files inside. The HQ repo holds no agent workspace content.
+Each agent repo is independent — its own git history, its own GitHub remote. Nesting them under `agents/` is a filesystem organisation only; git treats each as a standalone repo. The `idea/` root repo holds no agent workspace content.
+
+From any agent workspace (e.g. `agents/agent-engine-dev/`), org root files are two levels up: `../../CONTEXT.md`, `../../BACKLOG.md`, etc.
 
 **Mission Control** is the source of truth for task management. `BACKLOG.md` is a read-only auto-export regenerated by `scripts/export-backlog.sh`. Any agent can propose additions; only the CEO approves them (via the proposal PR flow and MC task creation).
 
@@ -98,29 +106,29 @@ Each coordination agent (`quality-manager`, `programme-manager`) has its own ded
 
 Each workspace has an `AGENTS.md` that shapes the agent's behaviour. For example:
 
-**`/home/pi/projects/engine/AGENTS.md`** (Engine Developer — at repo root):
+**`/home/pi/idea/agents/agent-engine-dev/AGENTS.md`** (Engine Developer — at repo root):
 - You are the Engine software developer for IDEA
 - Tech stack: TypeScript, Node.js, Automerge, Docker, zx
 - Your work lives on feature branches; open a PR for every change
 - Every PR must include: code changes, tests, and updated documentation
-- For complex features, propose a design doc in `hq/design/` first
+- For complex features, propose a design doc in `../../design/` first
 - The engine runs unattended in rural schools with no IT support — reliability is paramount
-- Consult `hq/BACKLOG.md` for approved work items
+- Consult `../../BACKLOG.md` for approved work items
 
-**`/home/pi/projects/quality-manager/AGENTS.md`** (Quality Manager — at repo root):
+**`/home/pi/idea/agents/agent-quality-manager/AGENTS.md`** (Quality Manager — at repo root):
 - You are the Quality Manager for IDEA
-- Review open PRs across `/home/node/workspace/engine` and `/home/node/workspace/console-ui`
+- Review open PRs across `/home/node/workspace/agents/agent-engine-dev` and `/home/node/workspace/agents/agent-console-dev`
 - Check: tests present, docs updated, change consistent with architecture, offline resilience preserved
 - Raise concerns in PR comments; never approve or merge — that is the CEO's role
-- Read the latest standup from `../standups/` before each review session
+- Read the latest standup from `../../standups/` before each review session
 - For thorough PR reviews, use a council approach: run four parallel specialist perspectives
   (architecture, testing, documentation, offline resilience), then synthesise findings into a
   single structured report before presenting to the CEO
 
-**`/home/pi/projects/programme-manager/AGENTS.md`** (Programme Manager — at repo root):
+**`/home/pi/idea/agents/agent-programme-manager/AGENTS.md`** (Programme Manager — at repo root):
 - You are the Programme Manager for IDEA, a charity deploying offline school computers in rural Africa
 - You bridge the field and the world: you coordinate local field partners, support schools, and communicate impact to supporters and donors
-- **Field coordination**: Plan and schedule site visits to schools; define concrete expectations for schools and teachers between visits (e.g. "register 3 classes before next visit"); collect visit feedback from field partners and write structured reports into `hq/field-reports/`
+- **Field coordination**: Plan and schedule site visits to schools; define concrete expectations for schools and teachers between visits (e.g. "register 3 classes before next visit"); collect visit feedback from field partners and write structured reports into `../../field-reports/`
 - **Local partner training**: Create presentations and training materials that explain the solution and its apps to local field partners; keep materials simple and concrete for audiences with limited technology experience
 - **Teacher guides**: Write offline teacher guides for deployed apps (Kolibri, Nextcloud, offline Wikipedia); guides must work fully offline — served from the Engine or printed; keep language simple; use screenshots or diagrams where possible
 - **Supporter communications**: Manage the IDEA supporters WhatsApp group; draft newsletters; supply website content in `website/content-drafts/` as PRs for `site-dev` to implement; define and maintain IDEA's brand voice (`brand/tone-of-voice.md`, `brand/key-messages.md`)
@@ -161,9 +169,9 @@ Each agent's `AGENTS.md` instructions are prompts. The quality of those prompts 
 affects how well the agent performs its role. Opus 4.6 — the model used for development and
 quality review agents — has documented best practices that differ from other models.
 
-A file `hq/prompting-guide-opus.md` stores these best practices, sourced from Anthropic's
-official documentation. Any time an agent proposes an update to its own `AGENTS.md` (as a PR),
-it references this guide to ensure the update follows Opus 4.6 prompting conventions.
+A file `prompting-guide-opus.md` at the org root stores these best practices, sourced from
+Anthropic's official documentation. Any time an agent proposes an update to its own `AGENTS.md`
+(as a PR), it references this guide to ensure the update follows Opus 4.6 prompting conventions.
 
 This file is a reference for the CEO and agents when authoring or revising role definitions —
 not an agent instruction in itself.
@@ -187,7 +195,7 @@ update to its own `AGENTS.md` as a PR. The CEO reviews and merges. That is memor
 auditable, and CEO-approved.
 
 The same principle applies to shared knowledge. New facts about the product go into
-`hq/CONTEXT.md` via PR. New operational patterns go into the relevant `AGENTS.md`. Nothing
+`CONTEXT.md` (org root) via PR. New operational patterns go into the relevant `AGENTS.md`. Nothing
 accumulates silently.
 
 ---
@@ -218,8 +226,8 @@ invocation reliably triggers the whole structured workflow.
 
 **`/propose [topic]`** — all agents
 Every agent can surface a proposal. The mechanics are always the same: create
-`hq/proposals/YYYY-MM-DD-<topic>.md`, fill in the standard template, open a PR. A shared skill
-ensures consistent naming and structure regardless of which agent uses it.
+`../../proposals/YYYY-MM-DD-<topic>.md` (at the org root), fill in the standard template, open a PR.
+A shared skill ensures consistent naming and structure regardless of which agent uses it.
 
 **`/standup`** — all agents
 The standup contribution workflow is identical for every agent: read the current standup file,
@@ -248,7 +256,7 @@ capabilities. AGENTS.md instructions cover the workflow adequately.
 **Layer 2 — GitHub PRs (to be set up):** All code and document changes land on feature branches. The agent opens a PR. You review on GitHub and merge (or request changes). Branch protection on `main` in every repo enforces this mechanically.
 
 For complex engine or console changes, a third gate applies:
-1. Agent proposes a design doc in `hq/design/` → you approve via PR merge
+1. Agent proposes a design doc in `design/` (org root) → you approve via PR merge
 2. Implementation PR is raised only after the design is merged
 
 ---
@@ -268,7 +276,7 @@ Access Mission Control at `https://openclaw-pi.tail2d60.ts.net:4000`. OpenClaw C
 
 ### Using Mission Control + Agent Tabs
 
-**Task dispatch happens in Mission Control.** Create a task, assign it to the relevant agent. The Kanban board gives a single-screen view of all 7 agents' work simultaneously.
+**Task dispatch happens in Mission Control.** Create a task, assign it to the relevant agent. The Kanban board gives a single-screen view of all 5 operational agents' work simultaneously.
 
 **Plan approval happens in Mission Control's agent chat.** After assigning a task, open the agent's chat within MC to read and approve its plan before anything executes. `DEFAULT_PERMISSION_MODE=plan` is unchanged — agents always stop and wait for your approval.
 
@@ -409,7 +417,7 @@ The rest of the setup is unaffected: `openclaw.json`, `AGENTS.md` files, sandbox
 
 ### How task management works
 
-Task dispatch happens in the Kanban board. Create a task, assign it to the relevant agent. The board columns — `Planning → Inbox → Assigned → In Progress → Review → Done` — give a single-screen view of all 5 agents' work simultaneously.
+Task dispatch happens in the Kanban board. Create a task, assign it to the relevant agent. The board columns — `Planning → Inbox → Assigned → In Progress → Review → Done` — give a single-screen view of all 5 operational agents' work simultaneously.
 
 Plan approval happens in Mission Control's agent chat. After assigning a task, open the agent's chat within MC to read and approve its plan before anything executes. `DEFAULT_PERMISSION_MODE=plan` is unchanged — MC is both the dispatch and the approval layer.
 
@@ -419,14 +427,14 @@ The proposal and PR flow is unaffected by MC. MC tasks are the implementation-le
 
 ### BACKLOG.md Export
 
-Mission Control persists task state in SQLite — outside git and not human-readable without the MC UI. `hq/BACKLOG.md` is kept as an auto-exported mirror of the Kanban board so that agents have a readable task list and git retains an audit trail.
+Mission Control persists task state in SQLite — outside git and not human-readable without the MC UI. `BACKLOG.md` at the org root is kept as an auto-exported mirror of the Kanban board so that agents have a readable task list and git retains an audit trail.
 
 **Mechanism:**
-- `hq/scripts/export-backlog.sh` queries the MC REST API and regenerates `BACKLOG.md` in standard
+- `scripts/export-backlog.sh` (org root) queries the MC REST API and regenerates `BACKLOG.md` in standard
   markdown format, grouped by board (Engineering, HQ) and column (backlog / in progress / review / done)
 - The file opens with: `<!-- Auto-exported from Mission Control YYYY-MM-DD HH:MM. Do not edit manually. -->`
 - Triggered automatically by OpenClaw's built-in cron scheduler (schedule to be defined)
-- Output is committed to the hq repo as a normal file change
+- Output is committed to the `idea/` org root repo as a normal file change
 
 Agents read `BACKLOG.md` at session start via HEARTBEAT.md. It is versioned and searchable without needing the MC UI. It is never edited manually.
 
@@ -486,8 +494,8 @@ Cron triggers an agent or script at a precise time using standard cron expressio
 
 | Activity | Mechanism | Schedule | Who |
 |----------|-----------|----------|-----|
-| Morning standup file seeded | Cron | 07:30 Mon–Fri | Standup script — creates `hq/standups/YYYY-MM-DD.md` with the opening section: recent commits, open PRs, backlog priorities |
-| BACKLOG.md refreshed from Mission Control | Cron | Every 2 hours, 07:00–20:00 | `hq/scripts/export-backlog.sh` — queries MC REST API, commits updated `BACKLOG.md` to hq repo |
+| Morning standup file seeded | Cron | 07:30 Mon–Fri | Standup script — creates `standups/YYYY-MM-DD.md` (org root) with the opening section: recent commits, open PRs, backlog priorities |
+| BACKLOG.md refreshed from Mission Control | Cron | Every 2 hours, 07:00–20:00 | `scripts/export-backlog.sh` — queries MC REST API, commits updated `BACKLOG.md` to `idea/` org root repo |
 | engine-dev heartbeat | Heartbeat | Every 30 min, 08:00–22:00 | Checks open PRs, test status, assigned backlog items |
 | console-dev heartbeat | Heartbeat | Every 30 min, 08:00–22:00 | Checks open PRs, assigned backlog items |
 | site-dev heartbeat | Heartbeat | Every 30 min, 08:00–22:00 | Checks open PRs, deploy status, assigned backlog items |
@@ -519,7 +527,7 @@ container directory at `/home/node/workspace/`).
 "Dialogue" is approximated through three mechanisms:
 1. **Sequential contribution to a shared document** — each agent reads what came before, then
    adds their voice, so later agents naturally respond to earlier ones
-2. **Persistent discussion threads** — topic-based files in `hq/discussions/` that any agent
+2. **Persistent discussion threads** — topic-based files in `discussions/` (org root) that any agent
    can contribute to over time
 3. **@-mention convention** — agents signal when they need a specific other agent's input,
    giving the CEO a clear guide for which tab to open next
@@ -544,7 +552,7 @@ Focus for today, current priorities, anything agents should keep in mind.
 
 ---
 
-## engine-dev (Axle ⚙️)
+## engine-dev
 
 ### Working on
 What I am currently doing and why it matters.
@@ -561,7 +569,7 @@ Use @agent-id to be explicit.
 
 ---
 
-## console-dev (Pixel 🖥️)
+## console-dev
 [same four sections]
 
 ...
@@ -575,7 +583,7 @@ Decisions made. Actions added to backlog. Discussion threads opened.
 1. CEO (or the standup script) creates the file with the opening section and today's context
    (recent commits, open PRs, backlog priorities)
 2. CEO opens Agent 1's tab: *"Add your voice to today's standup at
-   `hq/standups/YYYY-MM-DD.md` — read the whole file first, then contribute"*
+   `standups/YYYY-MM-DD.md` (org root) — read the whole file first, then contribute"*
 3. Agent reads the whole file, fills in their four sections, commits
 4. CEO opens Agent 2's tab — same instruction; Agent 2 reads Agent 1's contribution and may
    respond directly to it
@@ -591,7 +599,7 @@ Not every standup needs all seven agents. The CEO decides the scope:
 | Mode | Who participates | When |
 |------|-----------------|------|
 | **Daily light** | Agents with active backlog items (2–4) | Most days |
-| **Full roundtable** | All 7 | After a milestone; when something cross-cutting happened |
+| **Full roundtable** | All 5 operational agents | After a milestone; when something cross-cutting happened |
 | **Issue-triggered** | Relevant 2–3 agents | When any agent flags a cross-cutting concern |
 
 #### Why this creates genuine dialogue
@@ -600,19 +608,19 @@ Not every standup needs all seven agents. The CEO decides the scope:
 - The template prompts agents to share *insights* (not just status) and ask *questions*
 - Later agents respond directly to earlier ones — emergent cross-pollination
 - The CEO can re-open any agent tab mid-sequence to follow up on an @-mention
-- The completed document is committed to `hq/standups/` — the dialogue is permanent and
-  searchable
+- The completed document is committed to `standups/` at the org root — the dialogue is permanent
+  and searchable
 
 ---
 
-### Mechanism 2: Discussion Threads — hq/discussions/
+### Mechanism 2: Discussion Threads — discussions/
 
 Standups surface ideas and concerns. Some need more depth than a standup can give. Discussion
 threads provide a persistent, topic-based forum for this deeper exploration.
 
 **How a thread works:**
 
-1. Any agent (or CEO) opens: `hq/discussions/YYYY-MM-DD-<topic>.md`
+1. Any agent (or CEO) opens: `discussions/YYYY-MM-DD-<topic>.md` (org root)
 2. The opening section states the question or proposal clearly, plus the opener's initial view
 3. Tagged agents (`@agent-id`) add their perspective when the CEO opens their tab and points
    them at the thread
@@ -624,11 +632,11 @@ threads provide a persistent, topic-based forum for this deeper exploration.
 
 **Examples:**
 
-- **Programme-manager** discovers guides assume USB ports are labelled: *"Is this true for our hardware?"*
+- **programme-manager** discovers guides assume USB ports are labelled: *"Is this true for our hardware?"*
   → tags `@engine-dev` → engine-dev clarifies → programme-manager updates guides, thread closed
-- **Programme-manager** finds a grant requiring offline impact metrics → tags `@engine-dev`,
+- **programme-manager** finds a grant requiring offline impact metrics → tags `@engine-dev`,
   `@console-dev` → dialogue about what is feasible to measure → thread feeds into a backlog proposal
-- **Engine-dev** hits an Automerge edge case → tags `@quality-manager`, `@programme-manager` → QM
+- **engine-dev** hits an Automerge edge case → tags `@quality-manager`, `@programme-manager` → QM
   documents as a known limitation, programme-manager adds a troubleshooting note to the teacher guides, thread closed
 - **CEO** wants to explore whether a new app category is worth supporting → opens thread,
   tags all relevant agents → full multi-stakeholder exploration before any backlog commitment
@@ -655,22 +663,45 @@ the day's standup file after each agent's contribution and print a suggested fol
 
 ## File System Structure
 
-Every agent has its own dedicated git repository with `AGENTS.md` at the repo root. The `hq/` repo is the shared company coordination repo — it holds no agent workspace content. This gives all 7 agents an identical structure: own repo + shared company repo.
+Every agent has its own dedicated git repository with `AGENTS.md` at the repo root. The `idea/` root repo is the shared company coordination repo — it holds no agent workspace content. All agent repos live under `idea/agents/`.
 
 ```
-idea-edu-africa/
-  engine           ← engine-dev workspace
-  console-ui       ← console-dev workspace
-  website          ← site-dev workspace
-  quality-manager  ← quality-manager workspace
-  programme-manager ← programme-manager workspace
-  hq               ← company repo: CONTEXT.md, ROLES.md, BACKLOG.md,
-                      PROCESS.md, standups/, discussions/, design/, proposals/
+/home/pi/idea/                         ← org root; mounted as /home/node/workspace/
+  CONTEXT.md
+  ROLES.md
+  BACKLOG.md                           ← auto-exported from Mission Control
+  PROCESS.md
+  prompting-guide-opus.md
+  standups/
+  discussions/
+  design/
+  proposals/
+  scripts/
+    export-backlog.sh
+  agents/
+    agent-engine-dev/                  ← engine-dev workspace (independent git repo)
+    agent-console-dev/                 ← console-dev workspace (independent git repo)
+    agent-site-dev/                    ← site-dev workspace (independent git repo)
+    agent-quality-manager/             ← quality-manager workspace (independent git repo)
+    agent-programme-manager/           ← programme-manager workspace (independent git repo)
+    agent-researcher/                  ← researcher workspace (independent git repo; CEO-only)
 ```
 
-The standard Claude Code convention — `AGENTS.md` at the repo root — applies uniformly to all 7 agents without exceptions. Each agent's git history is clean and scoped: teacher guide commits live only in the teacher repo, engineering commits only in engine. Adding a new agent means creating a new repo.
+**GitHub org (`idea-edu-africa`) repo names:**
 
-All 8 repos are mounted into the same Docker container directory (`/home/node/workspace/`), so every agent can read and write across the full project tree regardless of repo boundaries. Separate repos means separate git histories, not filesystem isolation.
+| Repo | Agent id | Role |
+|------|----------|------|
+| `idea` | — | Org root: coordination, standups, proposals, backlog |
+| `agent-engine-dev` | `engine-dev` | Engine software developer |
+| `agent-console-dev` | `console-dev` | Console UI developer |
+| `agent-site-dev` | `site-dev` | Website developer |
+| `agent-quality-manager` | `quality-manager` | Cross-project quality reviewer |
+| `agent-programme-manager` | `programme-manager` | Field coordination, comms, fundraising |
+| `agent-researcher` | `researcher` | Strategic advisor to CEO (not operational) |
+
+The `AGENTS.md` at each agent repo root applies uniformly without exceptions. Each agent's git history is clean and scoped. Adding a new agent means creating a new `agent-<role>/` repo.
+
+All repos are mounted into the same Docker container at `/home/node/workspace/`, so every agent can read and write across the full project tree regardless of repo boundaries. Separate repos means separate git histories, not filesystem isolation.
 
 ---
 
@@ -678,7 +709,7 @@ All 8 repos are mounted into the same Docker container directory (`/home/node/wo
 
 Every agent needs a shared understanding of the product: what App Disks are, how the Engine and Console work, what offline-first means in practice. This knowledge belongs in one place.
 
-`hq/CONTEXT.md` is the shared knowledge base for all agents. All agents read it at the start of each session, referenced in their HEARTBEAT.md. It covers:
+`CONTEXT.md` at the org root is the shared knowledge base for all agents. All agents read it at the start of each session, referenced in their HEARTBEAT.md. It covers:
 
 1. **Mission** — Who IDEA serves, what problem it solves, why it matters
 2. **Solution overview** — What the system does at a high level
@@ -688,7 +719,7 @@ Every agent needs a shared understanding of the product: what App Disks are, how
 The knowledge layer is cleanly separated across three files:
 - **SOUL.md** — values and behaviour (shared across all agents via sandbox)
 - **AGENTS.md** — role-specific instructions (at each agent's repo root)
-- **CONTEXT.md** — factual product knowledge (single file in `hq/`, read by all)
+- **CONTEXT.md** — factual product knowledge (single file at org root, read by all)
 
 Any factual update to the product propagates to all agents by editing one file. The Quality Manager reviews CONTEXT.md changes for accuracy as part of the normal PR flow.
 
@@ -696,11 +727,11 @@ Any factual update to the product propagates to all agents by editing one file. 
 
 ## Backlog Growth Process
 
-Growing the backlog is a collaborative, PR-driven process. Full details in `hq/PROCESS.md`. Summary:
+Growing the backlog is a collaborative, PR-driven process. Full details in `PROCESS.md` (org root). Summary:
 
 ### The pipeline
 
-1. **Anyone proposes** — any agent (or CEO) creates `hq/proposals/YYYY-MM-DD-<topic>.md` and opens a PR.
+1. **Anyone proposes** — any agent (or CEO) creates `proposals/YYYY-MM-DD-<topic>.md` (org root) and opens a PR.
 
 2. **Cross-team refinement** — relevant agents are tagged in the PR. Examples:
    - Fundraising identifies a need for usage analytics → tags `engine-dev` for feasibility,
@@ -713,7 +744,7 @@ Growing the backlog is a collaborative, PR-driven process. Full details in `hq/P
 
 3. **CEO decides** — merges (approved → backlog), requests changes, or closes (declined).
 
-4. **Task creation** — on merge, the CEO creates a task in Mission Control and assigns it to the relevant agent. `BACKLOG.md` is regenerated by running `hq/scripts/export-backlog.sh` and committing the output.
+4. **Task creation** — on merge, the CEO creates a task in Mission Control and assigns it to the relevant agent. `BACKLOG.md` is regenerated by running `scripts/export-backlog.sh` (org root) and committing the output.
 
 ### Why this works
 
@@ -726,20 +757,20 @@ Growing the backlog is a collaborative, PR-driven process. Full details in `hq/P
 
 ## Project Repositories
 
-| Repo | Current URL | Notes |
-|------|------------|-------|
-| `engine` | https://github.com/koenswings/engine | Engine software |
-| `openclaw` | https://github.com/koenswings/openclaw | OpenClaw platform config |
-| `idea-proposal` | https://github.com/koenswings/idea-proposal | This planning doc and proposals |
-| `console-ui` | (to create) | Console UI developer workspace |
-| `website` | (to create) | Site developer workspace |
-| `quality-manager` | (to create) | Quality manager workspace |
-| `programme-manager` | (to create) | Programme manager workspace |
-| `hq` | (to create) | Shared coordination repo |
+All repos under `idea-edu-africa` GitHub org. Repos currently under personal account `koenswings` will be transferred when the org is created.
 
-All repos currently under personal account `koenswings`. Will transfer to `idea-edu-africa` org when it is created.
+| Repo | Target URL | Current URL | Status |
+|------|-----------|-------------|--------|
+| `idea` | `idea-edu-africa/idea` | (to create) | Org root / coordination hub |
+| `agent-engine-dev` | `idea-edu-africa/agent-engine-dev` | `koenswings/engine` | Rename + transfer |
+| `agent-console-dev` | `idea-edu-africa/agent-console-dev` | (to create) | New |
+| `agent-site-dev` | `idea-edu-africa/agent-site-dev` | (to create) | New |
+| `agent-quality-manager` | `idea-edu-africa/agent-quality-manager` | (to create) | New |
+| `agent-programme-manager` | `idea-edu-africa/agent-programme-manager` | (to create) | New |
+| `agent-researcher` | `idea-edu-africa/agent-researcher` | `koenswings/idea-proposal` | Rename + transfer |
+| `openclaw` | `idea-edu-africa/openclaw` | `koenswings/openclaw` | Transfer only |
 
-Total: **6 repos** — 5 agent repos + 1 shared `hq` repo.
+Total: **7 repos** — 1 org root + 5 operational agent repos + 1 researcher repo. Plus `openclaw` for platform config.
 
 ---
 
@@ -747,16 +778,21 @@ Total: **6 repos** — 5 agent repos + 1 shared `hq` repo.
 
 1. ✅ Set up project repos: `engine`, `openclaw`, `idea-proposal` on GitHub
 2. ✅ Set up VS Code / Claude Code / tmux per-project session pattern across all three projects
-3. Review and approve the full proposal in `/home/pi/projects/idea-proposal/` (AGENTS.md files, sandbox files, openclaw.json)
-4. Create GitHub Organisation (`idea-edu-africa`) and transfer existing repos; create new repos: `console-ui`, `website`, `quality-manager`, `programme-manager`, `hq` (5 new repos)
-5. Create project directories on the Pi: `console-ui/`, `website/`, `quality-manager/`, `programme-manager/`, `hq/` with subdirs
-6. Copy approved `AGENTS.md` files from proposal into each workspace
-7. Apply updated `openclaw.json` (rename existing agents + add new ones)
-8. Copy sandbox files (IDENTITY, SOUL, USER, TOOLS, HEARTBEAT, BOOTSTRAP) into each agent's OpenClaw sandbox
-9. Restart OpenClaw: `sudo docker restart openclaw-gateway`
-10. Set up branch protection on `main` in each GitHub repo (CEO-only merge)
-11. Pair your browser with each new agent in the OpenClaw UI
-12. Run the BOOTSTRAP session for each new agent to confirm identity and orientation
+3. Review and approve the full proposal in `/home/pi/idea/agents/agent-researcher/` (AGENTS.md files, sandbox files, openclaw.json)
+4. Create `/home/pi/idea/` directory structure on the Pi: org root files + `agents/` subfolder
+5. Move existing repos into new structure:
+   - `/home/pi/projects/engine` → `/home/pi/idea/agents/agent-engine-dev/`
+   - `/home/pi/projects/idea-proposal` → `/home/pi/idea/agents/agent-researcher/`
+6. Update Docker volume mount in `compose.yaml`: `/home/pi/projects` → `/home/pi/idea`
+7. Create GitHub Organisation (`idea-edu-africa`); rename + transfer `engine` → `agent-engine-dev`, `idea-proposal` → `agent-researcher`, `openclaw` → `openclaw`; create new repos: `idea`, `agent-console-dev`, `agent-site-dev`, `agent-quality-manager`, `agent-programme-manager`
+8. Create new agent workspace directories: `agents/agent-console-dev/`, `agents/agent-site-dev/`, `agents/agent-quality-manager/`, `agents/agent-programme-manager/`; initialise as git repos cloned from GitHub
+9. Copy approved `AGENTS.md` files from proposal into each workspace
+10. Apply updated `openclaw.json` (rename existing agents + add new ones with updated workspace paths)
+11. Copy sandbox files (IDENTITY, SOUL, USER, TOOLS, HEARTBEAT, BOOTSTRAP) into each agent's OpenClaw sandbox
+12. Restart OpenClaw: `sudo docker restart openclaw-gateway`
+13. Set up branch protection on `main` in each GitHub repo (CEO-only merge)
+14. Pair your browser with each new agent in the OpenClaw UI
+15. Run the BOOTSTRAP session for each new agent to confirm identity and orientation
 
 ---
 
@@ -767,21 +803,23 @@ Total: **6 repos** — 5 agent repos + 1 shared `hq` repo.
 - [x] Set up `engine`, `openclaw`, `idea-proposal` repos on GitHub (currently under `koenswings`)
 - [x] Set up VS Code / Claude Code / tmux per-project session pattern
 - [x] AGENTS.md file structure → one repo per agent (see File System Structure section)
-- [x] Shared knowledge → single `hq/CONTEXT.md` (see Shared Agent Knowledge section)
+- [x] Shared knowledge → single `CONTEXT.md` at org root (see Shared Agent Knowledge section)
 - [x] Standup model → roundtable format + discussion threads (see Multi-Agent Dialogue section)
 - [x] Operating layer → Mission Control from day one (see Mission Control section)
 - [x] BACKLOG.md → auto-export from MC via script (see Mission Control section)
-- [ ] Review and approve proposal in `/home/pi/projects/idea-proposal/`
-- [ ] Create `hq/CONTEXT.md` — draft covering mission, solution overview, key concepts, guiding principles
-- [ ] Create `hq/prompting-guide-opus.md` — Opus 4.6 prompting best practices from Anthropic docs
-- [ ] Update `hq/ROLES.md` to link to all 6 repos (5 agent repos + hq)
-- [ ] Design standup template (`hq/standups/TEMPLATE.md`) and enhance `./standup` script: seed file with context, support @-mention scanning after each agent pass
-- [ ] Write `hq/scripts/export-backlog.sh` — queries MC REST API, generates BACKLOG.md
-- [ ] Create GitHub organisation (`idea-edu-africa`) and transfer repos; create 5 new repos: `console-ui`, `website`, `quality-manager`, `programme-manager`, `hq`
-- [ ] Create project directories on Pi: `console-ui/`, `website/`, `quality-manager/`, `programme-manager/`, `hq/` with subdirs
-- [ ] Configure OpenClaw agents (rename engine→engine-dev, console-ui→console-dev; add 3 new agents with updated workspace paths)
+- [ ] Review and approve proposal in `/home/pi/idea/agents/agent-researcher/`
+- [ ] Create `/home/pi/idea/` directory structure on Pi; move `engine` and `idea-proposal` into new paths
+- [ ] Update Docker volume mount in `compose.yaml`: `/home/pi/projects` → `/home/pi/idea`
+- [ ] Create `CONTEXT.md` at org root — draft covering mission, solution overview, key concepts, guiding principles
+- [ ] Create `prompting-guide-opus.md` at org root — Opus 4.6 prompting best practices from Anthropic docs
+- [ ] Update `ROLES.md` to link to all 7 repos (1 org root + 5 operational agents + researcher)
+- [ ] Design standup template (`standups/TEMPLATE.md`) and enhance `./standup` script: seed file with context, support @-mention scanning after each agent pass
+- [ ] Write `scripts/export-backlog.sh` — queries MC REST API, generates BACKLOG.md
+- [ ] Create GitHub organisation (`idea-edu-africa`); rename + transfer `engine` → `agent-engine-dev`, `idea-proposal` → `agent-researcher`; create new repos: `idea`, `agent-console-dev`, `agent-site-dev`, `agent-quality-manager`, `agent-programme-manager`
+- [ ] Create new agent workspace directories under `agents/`; initialise from GitHub
+- [ ] Configure OpenClaw agents in `openclaw.json`: rename existing entries, add new agents, update all workspace paths to `/home/node/workspace/agents/agent-<role>`
 - [ ] Copy sandbox files (IDENTITY, SOUL, USER, TOOLS, HEARTBEAT, BOOTSTRAP) to each agent
-- [ ] Set up branch protection on `main` across all 6 repos
+- [ ] Set up branch protection on `main` across all 7 repos
 - [ ] Deploy Mission Control alongside OpenClaw; configure board hierarchy (IDEA org → Engineering / HQ boards → per-agent boards)
 - [ ] Migrate existing backlog items from BACKLOG.md into Mission Control
 - [ ] BOOTSTRAP sessions for all new agents

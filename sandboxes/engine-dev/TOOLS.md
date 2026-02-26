@@ -3,10 +3,10 @@
 ## Environment
 
 - **Pi hostname:** engine-pi (or check `hostname` in the container)
-- **Projects root (host):** `/home/pi/projects/`
+- **Projects root (host):** `/home/pi/idea/`
 - **Projects root (container):** `/home/node/workspace/`
-- **Engine repo:** `/home/node/workspace/engine`
-- **HQ repo:** `/home/node/workspace/hq`
+- **Engine repo:** `/home/node/workspace/agents/agent-engine-dev`
+- **Org root:** `/home/node/workspace/` (CONTEXT.md, BACKLOG.md, proposals/, etc.)
 - **OpenClaw data:** `/root/.openclaw/` (container)
 
 ## SSH

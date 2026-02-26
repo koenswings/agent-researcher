@@ -1,21 +1,56 @@
-# IDEA Proposal
+# agent-researcher — Compass (Strategic Advisor)
 
-Planning and proposal documents for configuring OpenClaw to run the IDEA virtual company.
+**Agent id:** `researcher`
+**Project name:** Compass
+**tmux session:** `claude-agent-researcher`
 
-**IDEA** (Initiative for Digital Education in Africa) is a charity deploying Raspberry Pi-based offline school computers into rural African schools.
+## What This Is
 
-## What this project is
+This is the workspace for **Compass**, the strategic advisor to the IDEA CEO. Its purpose is to
+help the CEO think through organisational structure, agent design, governance, and long-term
+direction for the virtual company.
 
-This is the pre-approval workspace. Documents here describe how the IDEA virtual company will be structured and operated through OpenClaw — the agent roster, HQ directory layout, CEO approval workflows, and component backlogs.
+This is not an operational agent. It does not take tasks from Mission Control, open PRs on
+operational repos, or participate in daily standups. It is consulted — the CEO comes here to
+think, not to dispatch work.
 
-Once the CEO approves a proposal, it is implemented and its documentation migrates to the appropriate operational project (primarily `/home/pi/openclaw`).
+## Key Documents
 
-## Key documents
+- **[openclaw-brainstorm.md](openclaw-brainstorm.md)** — Full configuration plan: agent roster,
+  directory structure, workflows, architectural decisions, backlog.
+- **[openclaw.json](openclaw.json)** — Proposed OpenClaw agent configuration (to be applied when
+  implementing the virtual company).
+- **[workspaces/](workspaces/)** — Staging area: approved AGENTS.md files and org root content,
+  ready to be deployed to their final locations.
+- **[sandboxes/](sandboxes/)** — Staging area: OpenClaw sandbox files (IDENTITY, SOUL, USER,
+  TOOLS, HEARTBEAT, BOOTSTRAP) for each agent.
 
-- **[openclaw-brainstorm.md](openclaw-brainstorm.md)**: Main planning document — agent roster, HQ structure, daily workflows, decisions log, and current backlog.
+## Directory Structure
 
-## Claude session
+```
+agent-researcher/
+  CLAUDE.md                    ← agent instructions (role, scope, memory isolation rules)
+  openclaw-brainstorm.md       ← main planning document
+  openclaw.json                ← proposed openclaw configuration
+  workspaces/
+    idea/                      ← org root content (deploy to /home/pi/idea/)
+      CONTEXT.md, ROLES.md, PROCESS.md, BACKLOG.md
+    agents/
+      agent-engine-dev/AGENTS.md
+      agent-console-dev/AGENTS.md
+      agent-site-dev/AGENTS.md
+      agent-quality-manager/AGENTS.md
+      agent-programme-manager/AGENTS.md
+  sandboxes/
+    engine-dev/
+    console-dev/
+    site-dev/
+    quality-manager/
+    programme-manager/
+    researcher/
+```
 
-This project uses the `claude-idea` tmux session. Opening this folder in VS Code via Remote-SSH automatically attaches to (or creates) that session, with project-specific Claude memory isolated from other projects.
+## Memory
 
-See the engine project's README for the full explanation of the per-project session convention.
+This agent's Claude memory is private to the CEO. Operational agents do not read it and must
+not be directed here. See `CLAUDE.md` for the full memory isolation rules.

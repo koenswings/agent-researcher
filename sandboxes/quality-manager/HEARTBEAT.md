@@ -3,8 +3,8 @@
 Periodic checks to run during heartbeat polls (2-4 times per day):
 
 ## Check: Open PRs across all repos
-- Are there open PRs on `engine`, `console-ui`, or `website` that have not been reviewed?
-- Are there open proposal PRs in `hq/proposals/` that need a QM comment?
+- Are there open PRs on `agent-engine-dev`, `agent-console-dev`, or `agent-site-dev` that have not been reviewed?
+- Are there open proposal PRs in `proposals/` (org root) that need a QM comment?
 - List any unreviewed PRs in today's memory file.
 
 ## Check: Review SLA
