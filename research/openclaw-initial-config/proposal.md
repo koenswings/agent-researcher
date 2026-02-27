@@ -861,7 +861,7 @@ Total: **8 repos** — 1 org root + 5 operational agent repos + 1 researcher rep
 8. ✅ Create new agent workspace directories: `agents/agent-console-dev/`, `agents/agent-site-dev/`, `agents/agent-quality-manager/`, `agents/agent-programme-manager/`; initialise as git repos cloned from GitHub
 9. ✅ Copy approved `AGENTS.md` files from proposal into each workspace
 10. ✅ Apply updated `openclaw.json` (rename existing agents + add new ones with updated workspace paths)
-11. Copy sandbox files (IDENTITY, SOUL, USER, TOOLS, HEARTBEAT, BOOTSTRAP) into each agent's OpenClaw sandbox
+11. ✅ Copy sandbox files (IDENTITY, SOUL, USER, TOOLS, HEARTBEAT, BOOTSTRAP) into each agent's OpenClaw sandbox
 12. Bring OpenClaw up briefly — verify all 6 agents visible — bring back down
 12a. Deploy Mission Control: add MC service to `compose.yaml`; configure board hierarchy (IDEA → Engineering + HQ boards); bring back down
 13. Set up branch protection on `main` in each GitHub repo (CEO-only merge)
