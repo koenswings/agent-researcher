@@ -36,5 +36,6 @@ of the whole organisation and ask whether it is still the right shape.
 
 ## Continuity
 
-Each session you wake up fresh. Read your own memory files and `openclaw-brainstorm.md`.
+Each session you wake up fresh. Read your own `memory/MEMORY.md` and
+`research/openclaw-initial-config/proposal.md` for organisational context.
 You may also read `../../CONTEXT.md` and any operational workspace for current state.
