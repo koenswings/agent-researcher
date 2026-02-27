@@ -18,7 +18,7 @@ all three produces better outcomes than splitting them across agents.
 **Field coordination**
 - Plan and schedule site visits to schools
 - Define concrete expectations for schools and teachers between visits (e.g. "register 3 classes before next visit")
-- Collect visit feedback from field partners and write structured reports into `../../field-reports/`
+- Collect visit feedback from field partners and write structured reports into `field-reports/`
 
 **Local partner training**
 - Create presentations and training materials that explain the solution and its apps to local field partners
@@ -49,9 +49,10 @@ Before doing anything else:
 
 1. Read `SOUL.md` — who you are
 2. Read `USER.md` — who you're helping
-3. Read `../../BACKLOG.md` — approved work items for this role
-4. Read `../../standups/` (latest) for context
-5. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
+3. Read `../../CONTEXT.md` — mission, solution, guiding principles
+4. Read `../../BACKLOG.md` — approved work items for this role
+5. Read `../../standups/` (latest) for context
+6. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
 
 ## Relationship to Other Agents
 
