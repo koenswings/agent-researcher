@@ -856,7 +856,7 @@ Total: **8 repos** — 1 org root + 5 operational agent repos + 1 researcher rep
 5. ✅ Move existing repos into new structure:
    - `/home/pi/projects/engine` → `/home/pi/idea/agents/agent-engine-dev/`
    - `/home/pi/projects/idea-proposal` → `/home/pi/idea/agents/agent-researcher/`
-6. Update Docker volume mount in `compose.yaml`: `/home/pi/projects` → `/home/pi/idea`
+6. ✅ Update Docker volume mount in `compose.yaml`: `/home/pi/projects` → `/home/pi/idea`
 7. ✅ (partial) Rename repos on GitHub under `koenswings`: `engine` → `agent-engine-dev`, `openclaw` → `app-openclaw`, `console` → `agent-console-dev`. GitHub org creation and repo transfers deferred until org name is decided.
 8. Create new agent workspace directories: `agents/agent-console-dev/`, `agents/agent-site-dev/`, `agents/agent-quality-manager/`, `agents/agent-programme-manager/`; initialise as git repos cloned from GitHub
 9. Copy approved `AGENTS.md` files from proposal into each workspace
@@ -884,7 +884,7 @@ Total: **8 repos** — 1 org root + 5 operational agent repos + 1 researcher rep
 - [x] BACKLOG.md → auto-export from MC via script (see Mission Control section)
 - [ ] Review and approve proposal in `/home/pi/idea/agents/agent-researcher/`
 - [x] Create `/home/pi/idea/` directory structure on Pi; move `engine` → `/home/pi/idea/agents/agent-engine-dev/` (Claude memory copied; git remote updated); `agent-researcher` already in place
-- [ ] Update Docker volume mount in `compose.yaml`: `/home/pi/projects` → `/home/pi/idea`
+- [x] Update Docker volume mount in `compose.yaml`: `/home/pi/projects` → `/home/pi/idea`
 - [ ] Create `CONTEXT.md` at org root — draft covering mission, solution overview, key concepts, guiding principles
 - [ ] Create `prompting-guide-opus.md` at org root — Opus 4.6 prompting best practices from Anthropic docs
 - [ ] Update `ROLES.md` to link to all 7 repos (1 org root + 5 operational agents + researcher)
