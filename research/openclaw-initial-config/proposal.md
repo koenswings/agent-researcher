@@ -862,10 +862,11 @@ Total: **8 repos** — 1 org root + 5 operational agent repos + 1 researcher rep
 9. ✅ Copy approved `AGENTS.md` files from proposal into each workspace
 10. ✅ Apply updated `openclaw.json` (rename existing agents + add new ones with updated workspace paths)
 11. Copy sandbox files (IDENTITY, SOUL, USER, TOOLS, HEARTBEAT, BOOTSTRAP) into each agent's OpenClaw sandbox
-12. Restart OpenClaw: `sudo docker restart openclaw-gateway`
+12. Bring OpenClaw up briefly — verify all 6 agents visible — bring back down
+12a. Deploy Mission Control: add MC service to `compose.yaml`; configure board hierarchy (IDEA → Engineering + HQ boards); bring back down
 13. Set up branch protection on `main` in each GitHub repo (CEO-only merge)
-14. Pair your browser with each new agent in the OpenClaw UI
-15. Run the BOOTSTRAP session for each new agent to confirm identity and orientation
+14. CEO live: pair browser with each agent in OpenClaw UI
+15. CEO live: run the BOOTSTRAP session for each new agent to confirm identity and orientation
 16. Create `app-openclaw` repo: Docker Compose packaging OpenClaw + Mission Control + Tailscale as a self-contained App Disk (`init_data.tar.gz` contains platform only — no IDEA-specific config)
 17. Add `idea/openclaw/` to the `idea` repo: committed, secrets-free reference config (`openclaw.json` agent roster, `compose-additions.yaml`); create `idea/scripts/setup.sh` to provision a fresh App Disk into a fully configured IDEA development machine; document the full installation process in `idea/openclaw/README.md`
 
