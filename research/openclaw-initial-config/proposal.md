@@ -79,7 +79,11 @@ Each IDEA role becomes one agent entry in `openclaw.json`, with its own workspac
 | `programme-manager` | `/home/pi/idea/agents/agent-programme-manager` | Field coordination, school support, teacher guides, supporter comms, fundraising |
 | `researcher` | `/home/pi/idea/agents/agent-researcher` | Strategic advisor to the CEO — org structure, governance, long-term direction |
 
-Each agent has its own dedicated git repository with `AGENTS.md` at the repo root. This applies uniformly to all 6 agents. The `idea/` repo root is the shared company coordination layer — it holds no agent workspace content.
+Each agent has its own dedicated git repository with `AGENTS.md` at the repo root. This applies to the 5 operational agents. The `researcher` agent is the exception: it runs as a **Claude Code CLI session** (in a tmux window), not as an OpenClaw agent session. Claude Code automatically reads `CLAUDE.md` at startup, so `CLAUDE.md` serves the same role that `AGENTS.md` serves for the operational agents.
+
+**Could researcher be added to Mission Control?** Yes — it could be added to `openclaw.json` and would then appear as a chat interface in Mission Control. The sandbox files (`SOUL.md`, `IDENTITY.md`, etc.) are already written for this. The trade-off is that the Claude Code session gives researcher full tool access (file reads, bash, web search, writing output files) and Claude Code's per-project memory system. An OpenClaw chat session would be more convenient but has limited tool access and different memory handling. The recommended approach is to keep researcher as a Claude Code session for deep strategic work, and revisit adding a lightweight Mission Control chat entry once OpenClaw's tool capabilities are better understood.
+
+The `idea/` repo root is the shared company coordination layer — it holds no agent workspace content.
 
 ### Workspace vs. Shared Filesystem
 
