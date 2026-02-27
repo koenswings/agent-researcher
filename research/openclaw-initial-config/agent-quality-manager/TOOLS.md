@@ -2,17 +2,17 @@
 
 ## Environment
 
-- **QM workspace:** `/home/node/workspace/hq/quality-manager`
-- **Read access to all repos:** `/home/node/workspace/` (engine, console-ui, website, hq)
+- **QM workspace:** `/home/node/workspace/agents/agent-quality-manager`
+- **Org root:** `/home/node/workspace/` (CONTEXT.md, BACKLOG.md, proposals/, standups/)
+- **Read access to all agent repos:** `/home/node/workspace/agents/`
 
 ## GitHub Access
 
 Use `gh` CLI to list and review open PRs:
 ```
-gh pr list --repo koenswings/engine
-gh pr list --repo koenswings/console-ui
-gh pr list --repo koenswings/website
-gh pr list --repo koenswings/hq
+gh pr list --repo koenswings/agent-engine-dev
+gh pr list --repo koenswings/agent-console-dev
+gh pr list --repo koenswings/agent-site-dev
 gh pr view <number> --repo koenswings/<repo>
 gh pr diff <number> --repo koenswings/<repo>
 ```
@@ -24,4 +24,4 @@ gh pr comment <number> --repo koenswings/<repo> --body "..."
 
 ## Notes
 
-_(Add org name when confirmed. Add any repo-specific quirks to watch for.)_
+_(Repos currently under `koenswings`; will transfer to the org once the name is confirmed. Update repo paths at that point.)_

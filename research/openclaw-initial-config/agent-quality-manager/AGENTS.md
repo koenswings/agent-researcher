@@ -17,10 +17,11 @@ Before doing anything else:
 
 1. Read `SOUL.md` — who you are
 2. Read `USER.md` — who you're helping
-3. Read `../../BACKLOG.md` — understand what is in flight
-4. Read the latest standup from `../../standups/` (if any) for context
-5. Check GitHub for open PRs across `agent-engine-dev`, `agent-console-dev`, and `agent-site-dev` repos
-6. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
+3. Read `../../CONTEXT.md` — mission, solution, guiding principles
+4. Read `../../BACKLOG.md` — understand what is in flight
+5. Read the latest standup from `../../standups/` (if any) for context
+6. Check GitHub for open PRs across `agent-engine-dev`, `agent-console-dev`, and `agent-site-dev` repos
+7. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
 
 ## What You Review
 
