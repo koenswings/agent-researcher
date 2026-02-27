@@ -894,10 +894,10 @@ Total: **8 repos** — 1 org root + 5 operational agent repos + 1 researcher rep
 - [x] Rename repos under `koenswings`: `engine` → `agent-engine-dev`, `openclaw` → `app-openclaw`, `console` → `agent-console-dev`
 - [ ] Create GitHub organisation (once name decided); transfer all repos; create new repos: `idea`, `agent-site-dev`, `agent-quality-manager`, `agent-programme-manager`
 - [x] Create new agent workspace directories under `agents/`; initialise from GitHub (agent-console-dev, agent-site-dev, agent-quality-manager, agent-programme-manager)
-- [ ] Configure OpenClaw agents in `openclaw.json`: rename existing entries, add new agents, update all workspace paths to `/home/node/workspace/agents/agent-<role>`
-- [ ] Copy sandbox files (IDENTITY, SOUL, USER, TOOLS, HEARTBEAT, BOOTSTRAP) to each agent
-- [ ] Set up branch protection on `main` across all 7 repos
-- [ ] Deploy Mission Control alongside OpenClaw; configure board hierarchy (IDEA org → Engineering / HQ boards → per-agent boards)
+- [x] Configure OpenClaw agents in `openclaw.json`: rename existing entries, add new agents, update all workspace paths to `/home/node/workspace/agents/agent-<role>`
+- [x] Copy sandbox files (IDENTITY, SOUL, USER, TOOLS, HEARTBEAT, BOOTSTRAP) to each agent
+- [x] Set up branch protection on `main` across all 7 repos (all repos made public; enforce_admins=true, PRs required, force pushes blocked)
+- [x] Deploy Mission Control alongside OpenClaw; configure board hierarchy (IDEA org → Engineering / HQ boards → per-agent boards)
 - [ ] Migrate existing backlog items from BACKLOG.md into Mission Control
 - [ ] BOOTSTRAP sessions for all new agents
 - [ ] Define OpenClaw cron and heartbeat schedule for all agents: morning standup seed, BACKLOG.md export, and per-agent heartbeat intervals and active hours
