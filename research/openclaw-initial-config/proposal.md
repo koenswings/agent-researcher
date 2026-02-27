@@ -858,7 +858,7 @@ Total: **8 repos** — 1 org root + 5 operational agent repos + 1 researcher rep
    - `/home/pi/projects/idea-proposal` → `/home/pi/idea/agents/agent-researcher/`
 6. ✅ Update Docker volume mount in `compose.yaml`: `/home/pi/projects` → `/home/pi/idea`
 7. ✅ (partial) Rename repos on GitHub under `koenswings`: `engine` → `agent-engine-dev`, `openclaw` → `app-openclaw`, `console` → `agent-console-dev`. GitHub org creation and repo transfers deferred until org name is decided.
-8. Create new agent workspace directories: `agents/agent-console-dev/`, `agents/agent-site-dev/`, `agents/agent-quality-manager/`, `agents/agent-programme-manager/`; initialise as git repos cloned from GitHub
+8. ✅ Create new agent workspace directories: `agents/agent-console-dev/`, `agents/agent-site-dev/`, `agents/agent-quality-manager/`, `agents/agent-programme-manager/`; initialise as git repos cloned from GitHub
 9. Copy approved `AGENTS.md` files from proposal into each workspace
 10. Apply updated `openclaw.json` (rename existing agents + add new ones with updated workspace paths)
 11. Copy sandbox files (IDENTITY, SOUL, USER, TOOLS, HEARTBEAT, BOOTSTRAP) into each agent's OpenClaw sandbox
@@ -892,7 +892,7 @@ Total: **8 repos** — 1 org root + 5 operational agent repos + 1 researcher rep
 - [ ] Write `scripts/export-backlog.sh` — queries MC REST API, generates BACKLOG.md
 - [x] Rename repos under `koenswings`: `engine` → `agent-engine-dev`, `openclaw` → `app-openclaw`, `console` → `agent-console-dev`
 - [ ] Create GitHub organisation (once name decided); transfer all repos; create new repos: `idea`, `agent-site-dev`, `agent-quality-manager`, `agent-programme-manager`
-- [ ] Create new agent workspace directories under `agents/`; initialise from GitHub
+- [x] Create new agent workspace directories under `agents/`; initialise from GitHub (agent-console-dev, agent-site-dev, agent-quality-manager, agent-programme-manager)
 - [ ] Configure OpenClaw agents in `openclaw.json`: rename existing entries, add new agents, update all workspace paths to `/home/node/workspace/agents/agent-<role>`
 - [ ] Copy sandbox files (IDENTITY, SOUL, USER, TOOLS, HEARTBEAT, BOOTSTRAP) to each agent
 - [ ] Set up branch protection on `main` across all 7 repos
