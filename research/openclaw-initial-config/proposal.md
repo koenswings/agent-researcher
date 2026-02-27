@@ -859,7 +859,7 @@ Total: **8 repos** — 1 org root + 5 operational agent repos + 1 researcher rep
 6. ✅ Update Docker volume mount in `compose.yaml`: `/home/pi/projects` → `/home/pi/idea`
 7. ✅ (partial) Rename repos on GitHub under `koenswings`: `engine` → `agent-engine-dev`, `openclaw` → `app-openclaw`, `console` → `agent-console-dev`. GitHub org creation and repo transfers deferred until org name is decided.
 8. ✅ Create new agent workspace directories: `agents/agent-console-dev/`, `agents/agent-site-dev/`, `agents/agent-quality-manager/`, `agents/agent-programme-manager/`; initialise as git repos cloned from GitHub
-9. Copy approved `AGENTS.md` files from proposal into each workspace
+9. ✅ Copy approved `AGENTS.md` files from proposal into each workspace
 10. Apply updated `openclaw.json` (rename existing agents + add new ones with updated workspace paths)
 11. Copy sandbox files (IDENTITY, SOUL, USER, TOOLS, HEARTBEAT, BOOTSTRAP) into each agent's OpenClaw sandbox
 12. Restart OpenClaw: `sudo docker restart openclaw-gateway`
