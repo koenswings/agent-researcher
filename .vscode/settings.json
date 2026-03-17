@@ -3,7 +3,7 @@
     "terminal.integrated.profiles.linux": {
         "tmux": {
             "path": "bash",
-            "args": ["-c", "tmux attach -t claude-agent-researcher 2>/dev/null || tmux new -s claude-agent-researcher 'claude'"]
+            "args": ["-c", "tmux attach -t claude-agent-researcher 2>/dev/null || tmux new -s claude-agent-researcher 'claude; exec bash -l'"]
         }
     },
     "terminal.integrated.scrollback": 10000,
