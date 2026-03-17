@@ -5,5 +5,8 @@
             "path": "bash",
             "args": ["-c", "tmux attach -t claude-agent-researcher 2>/dev/null || tmux new -s claude-agent-researcher 'claude'"]
         }
-    }
+    },
+    "terminal.integrated.scrollback": 10000,
+    "terminal.integrated.gpuAcceleration": "off",
+    "terminal.integrated.inheritEnv": true
 }
