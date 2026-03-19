@@ -343,9 +343,10 @@ Access Mission Control at `https://openclaw-pi.tail2d60.ts.net:4000`. OpenClaw C
 | **Assign** | Mission Control | Create task, assign to agent, set priority |
 | **Approve plan** | Mission Control (agent chat) | Read plan, type "go ahead" or modify |
 | **Observe** | Mission Control (agent chat) | Watch tool calls, file edits, git operations stream in real time |
-| **Accept work** | GitHub | Review PR, merge or request changes |
+| **Review** | Mission Control (agent chat) | Describe changes needed at whatever level of detail is useful — high-level direction or specific corrections. The agent implements, pushes to the same branch, the PR updates automatically. |
+| **Merge** | GitHub | Review the final diff, merge to main |
 
-The activity timeline in MC partially replaces the standup script — scan it each morning to see what ran overnight.
+**PR review happens in chat, not via GitHub inline comments.** What matters is a well-documented final solution, not a documented correction process. Describe the change you want — the agent updates the branch, the PR reflects the new state. GitHub is used only for the final merge. The agent never opens a new PR for the same change; it always pushes to the existing branch.
 
 **Which agent tab to use for what:**
 
@@ -361,17 +362,18 @@ The activity timeline in MC partially replaces the standup script — scan it ea
 
 ```
 Morning
-  └─ Mission Control: scan activity timeline → see what ran overnight
-  └─ GitHub: review any PRs raised overnight → merge or comment
+  └─ standups/YYYY-MM-DD.md: read the completed standup (auto-generated overnight)
+  └─ Add CEO close section: decisions, actions, threads to open
+  └─ GitHub: merge any PRs that are ready
 
 During the day
-  └─ Mission Control: create task for programme-manager → assign → approve plan in chat
-  └─ Mission Control: move engine-dev task to "In Progress" → open chat → review progress
-  └─ GitHub: quality-manager has commented on a PR → read, decide, merge
+  └─ Mission Control: create task, assign to agent, approve plan in chat
+  └─ Mission Control (chat): "I've read your PR — change X to Y" → agent updates branch → review again
+  └─ GitHub: merge when satisfied
 
-As needed
-  └─ Mission Control: assign programme-manager task ("donor update") → approve plan in chat
-  └─ GitHub: review the programme-manager draft PR, edit inline, merge when satisfied
+As needed (WhatsApp)
+  └─ Message programme-manager directly: "draft a donor update" → approve plan → agent delivers draft PR
+  └─ programme-manager posts to IDEA supporters group after CEO approval
 ```
 
 **Key mental model:** Mission Control is where you see the full picture and assign work. Agent tabs are where you have the conversation and approve plans. GitHub is where you accept finished work.
@@ -445,45 +447,48 @@ The same channel works in reverse: the agent sends guidance outward. When a new 
 
 ## Scheduling and Autonomous Behaviour
 
-OpenClaw's scheduling mechanisms are the foundation of autonomous operation. Without them, agents are passive: they respond only when the CEO opens a tab. With them, agents wake on a schedule, check on things, surface concerns, keep shared state fresh, and seed the morning standup — without any CEO input. This is what gives the virtual company the feel of a team that is always working, not a set of tools waiting to be used.
+Agents operate on-demand: they respond when the CEO opens a chat tab, assigns a task, or sends a WhatsApp message. This keeps costs predictable and makes every agent invocation intentional. Scheduled activity is limited to two lightweight cron scripts (no LLM) and the automated morning standup chain.
 
-OpenClaw provides two native mechanisms that together cover every scheduled need.
+**Agent heartbeats are disabled by default.** Polling an empty board every 10–30 minutes produces no value and consumes budget on every invocation. Heartbeats should be re-enabled per agent only when there is a sustained flow of active tasks that genuinely benefit from periodic monitoring — and at a cadence matched to how fast the relevant state actually changes (daily for programme-manager; every 1–2 hours at most for developer agents).
+
+OpenClaw provides two native mechanisms that cover every scheduled need.
 
 ### Heartbeat — routine monitoring on an interval
 
-A heartbeat is a periodic wake-check. OpenClaw sends the agent a prompt at a configured interval during active hours. The agent reads `HEARTBEAT.md`, runs its checks, and replies `HEARTBEAT_OK` if nothing needs attention. If something does — an unreviewed PR, a blocked backlog item, a concern to raise — the agent surfaces it and waits for the CEO.
+A heartbeat is a periodic wake-check. OpenClaw sends the agent a prompt at a configured interval. The agent reads `HEARTBEAT.md`, runs its checks, and returns `HEARTBEAT_OK` if nothing needs attention.
 
-One heartbeat batches what would otherwise be many separate polling tasks into a single context-aware turn. Because the agent has full session history, it can reason across everything it knows rather than responding to an isolated prompt in the dark.
+**Currently disabled for all agents.** The heartbeat infrastructure remains available and can be re-enabled per agent via `openclaw.json` when warranted. The correct cadence when re-enabled:
 
-Configuration per agent in `openclaw.json`:
-
-```json
-"heartbeat": {
-  "every": "30m",
-  "target": "last",
-  "activeHours": { "start": "08:00", "end": "22:00" }
-}
-```
+| Agent | Reason to heartbeat | Max cadence |
+|-------|---------------------|-------------|
+| engine-dev, console-dev, site-dev | New PRs, CI results | Every 2h, 08:00–20:00 |
+| quality-manager | Stale PRs awaiting review | Every 2h, 08:00–20:00 |
+| programme-manager | Grant deadlines, pending drafts | Once daily at 09:00 |
 
 ### Cron — exact-time triggers
 
-Cron triggers an agent or script at a precise time using standard cron expressions, running in an isolated session. Used for tasks that need exact timing: the morning standup seed and the BACKLOG.md export. These are the events that structure the company's daily rhythm.
+Cron triggers an agent or script at a precise time. Used for the BACKLOG.md refresh and the automated morning standup chain.
 
 ### Scheduled activities
 
-| Activity | Mechanism | Schedule | Who |
-|----------|-----------|----------|-----|
-| Morning standup file seeded | Cron | 07:30 Mon–Fri | Standup script — creates `standups/YYYY-MM-DD.md` (org root) with the opening section: recent commits, open PRs, backlog priorities |
-| BACKLOG.md refreshed from Mission Control | Cron | Every 2 hours, 07:00–20:00 | `scripts/export-backlog.sh` — queries MC REST API, commits updated `BACKLOG.md` to `idea/` org root repo |
-| engine-dev heartbeat | Heartbeat | Every 30 min, 08:00–22:00 | Checks open PRs, test status, assigned backlog items |
-| console-dev heartbeat | Heartbeat | Every 30 min, 08:00–22:00 | Checks open PRs, assigned backlog items |
-| site-dev heartbeat | Heartbeat | Every 30 min, 08:00–22:00 | Checks open PRs, deploy status, assigned backlog items |
-| quality-manager heartbeat | Heartbeat | Every 30 min, 08:00–22:00 | Scans for open PRs awaiting review across all repos; flags anything stale |
-| programme-manager heartbeat | Heartbeat | Every 30 min, 08:00–22:00 | Checks assigned backlog items; surfaces grant deadlines, pending field reports, drafts awaiting CEO review |
+| Activity | Mechanism | Schedule | What |
+|----------|-----------|----------|------|
+| BACKLOG.md refresh | Cron script (no LLM) | Every 2h, 07:00–20:00 | `scripts/export-backlog.sh` queries MC REST API, commits updated `BACKLOG.md` to `idea/` org root |
+| Standup seed | Cron script (no LLM) | 07:30 Mon–Fri | Generates context (git log, open PRs, BACKLOG.md diff, new proposals); hashes it; writes `standups/YYYY-MM-DD.md`; skips if hash unchanged since yesterday |
+| Standup summary | Cron — Quality Manager | 07:35 Mon–Fri | QM reads standup file; if skipped, does nothing; otherwise writes the Summary section and QM's own contribution |
+| Standup — engine-dev | Cron — engine-dev agent | 07:45 Mon–Fri | Reads standup file; contributes if standup is active, skips if marked skipped |
+| Standup — console-dev | Cron — console-dev agent | 07:55 Mon–Fri | Same |
+| Standup — site-dev | Cron — site-dev agent | 08:05 Mon–Fri | Same |
+| Standup — programme-manager | Cron — programme-manager agent | 08:15 Mon–Fri | Same |
+| All agent heartbeats | — | Disabled | Re-enable per agent when active task flow justifies it |
 
-The standup seed cron job is the signal that starts the CEO's morning. The CEO arrives to find the standup file already created and populated with context — commits since yesterday, open PRs, current backlog priorities. All they need to do is open each agent's tab and ask them to contribute.
+### Change detection — skip standup when nothing changed
 
-The exact schedules above are the intended configuration. The backlog item "Define OpenClaw cron and heartbeat schedule" covers implementing them in `openclaw.json` and the standup script.
+The standup seed script hashes the union of: recent commits across all repos, open PR titles and states, BACKLOG.md content, and filenames in `proposals/` and `discussions/`. The hash is stored at `standups/.last-context-hash`. If today's hash matches yesterday's, the script writes a skipped standup file and all downstream cron jobs do nothing. No LLM is woken.
+
+**Monday exception:** always run the full standup on Mondays regardless of hash — the start-of-week context has value even if nothing changed over the weekend.
+
+The automated chain means the CEO arrives in the morning to a completed standup. All that remains is reading it and adding the CEO close section.
 
 ---
 
@@ -546,60 +551,74 @@ file before writing — so later agents naturally respond to earlier ones.
 ```markdown
 # Standup — YYYY-MM-DD
 
-## Opening (CEO)
-Focus for today, current priorities, anything agents should keep in mind.
+<!-- Generated by standup-seed.sh at 07:30 -->
+<!-- Context hash: a3f7... (changed / unchanged since yesterday) -->
+
+## Context
+- Commits since yesterday: N (engine-dev: x, console-dev: y, ...)
+- Open PRs: N (repo #id: title, open N days)
+- Backlog changes: tasks moved, added, or closed
+- New proposals/discussions: filenames if any
+
+---
+
+## Summary — Quality Manager
+<!-- Cron-woken at 07:35. Cost: ~N input / ~N output tokens -->
+[QM synthesis: what the raw context means, what needs attention today]
+
+[QM four-section standup contribution]
 
 ---
 
 ## engine-dev
+<!-- Cron-woken at 07:45. Cost: ~N input / ~N output tokens -->
 
 ### Working on
-What I am currently doing and why it matters.
-
 ### New insight — may affect others
-Something I discovered that others should know. (Leave blank if nothing.)
-
 ### Question for the team
-A specific question or concern directed at another agent or the group.
-Use @agent-id to be explicit.
-
 ### Response to [agent name]
-(Only if a previous agent raised something relevant to my domain.)
 
 ---
 
-## console-dev
-[same four sections]
+## console-dev / site-dev / programme-manager
+[same four sections, cron-woken at 07:55 / 08:05 / 08:15]
 
-...
+---
 
 ## CEO close
 Decisions made. Actions added to backlog. Discussion threads opened.
+
+---
+## Standup cost
+| Step | Tokens in | Tokens out | Model |
+|------|-----------|------------|-------|
+| QM summary + contribution | ~N | ~N | opus-4-6 |
+| engine-dev | ~N | ~N | opus-4-6 |
+| console-dev | ~N | ~N | opus-4-6 |
+| site-dev | ~N | ~N | opus-4-6 |
+| programme-manager | ~N | ~N | opus-4-6 |
+| **Total** | **~N** | **~N** | |
 ```
+
+Token counts are self-reported estimates by each agent. The QM summary step can report exact counts if invoked via a direct API call from the cron script.
 
 #### Flow
 
-1. CEO (or the standup script) creates the file with the opening section and today's context
-   (recent commits, open PRs, backlog priorities)
-2. CEO opens Agent 1's tab: *"Add your voice to today's standup at
-   `standups/YYYY-MM-DD.md` (org root) — read the whole file first, then contribute"*
-3. Agent reads the whole file, fills in their four sections, commits
-4. CEO opens Agent 2's tab — same instruction; Agent 2 reads Agent 1's contribution and may
-   respond directly to it
-5. Repeat for all participating agents
-6. CEO reads the completed document and adds the closing section: decisions, new backlog
-   entries, discussion threads to open
-7. Any agent whose @-mention needs a follow-up response gets another pass
+The standup runs automatically overnight. The CEO arrives to a completed file.
+
+1. **07:30** — `standup-seed.sh` (no LLM): generates context from git log, GitHub API, BACKLOG.md; computes hash; compares to `standups/.last-context-hash`
+   - If **unchanged**: writes `standups/YYYY-MM-DD.md` with "Standup skipped — no changes since yesterday." All downstream cron jobs detect this and do nothing.
+   - If **changed** (or Monday): writes the Context section, stores new hash; downstream chain proceeds.
+2. **07:35** — Quality Manager woken by cron: reads the standup file; writes Summary section + QM's own four-section contribution; commits.
+3. **07:45–08:15** — engine-dev, console-dev, site-dev, programme-manager woken by cron at 10-minute intervals: each reads the full file (including all prior contributions), adds their four sections, commits.
+4. **CEO arrives** (~08:30 or whenever): reads the completed standup, adds the CEO close section.
+5. **Follow-up** (optional): re-open any agent's tab to respond to an @-mention or pursue a flagged concern.
 
 #### Depth is adjustable
 
-Not every standup needs all seven agents. The CEO decides the scope:
+On days when only some agents have active work, those with nothing to report keep their sections brief: "Nothing active this sprint." This is cheap and maintains the sequential reading structure that generates genuine dialogue between agents.
 
-| Mode | Who participates | When |
-|------|-----------------|------|
-| **Daily light** | Agents with active backlog items (2–4) | Most days |
-| **Full roundtable** | All 5 operational agents | After a milestone; when something cross-cutting happened |
-| **Issue-triggered** | Relevant 2–3 agents | When any agent flags a cross-cutting concern |
+If an agent's board has been empty for several consecutive standups, suppress its cron job until work is assigned rather than paying for repeated "nothing to report" turns.
 
 #### Why this creates genuine dialogue
 
