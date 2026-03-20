@@ -207,6 +207,76 @@ Add `"terminal.integrated.gpuAcceleration": "off"` to `.vscode/settings.json`.
 
 ---
 
+## Viewing Session History and Memory
+
+### Are there viewers?
+
+There is no built-in UI for browsing Claude Code session history. The files are readable but raw:
+
+- **Memory files** — plain `.md` files; open directly in any editor or markdown viewer
+- **Session JSONL** — one JSON object per line; no native viewer, but easily converted
+
+### Where the files live
+
+| What | Path |
+|---|---|
+| Memory files | `~/.claude/projects/<path-hash>/memory/*.md` |
+| Session conversation logs | `~/.claude/projects/<path-hash>/<session-uuid>.jsonl` |
+| Global input history | `~/.claude/history.jsonl` |
+
+The `<path-hash>` is the workspace path with `/` replaced by `-` (e.g. `/home/pi/idea/agents/agent-researcher` → `-home-pi-idea-agents-agent-researcher`).
+
+### Converting a session to readable markdown
+
+The JSONL format contains records of type `user`, `assistant`, `progress`, `system`, and `file-history-snapshot`. Only `user` and `assistant` records carry conversation content. Assistant content is a list of typed blocks: `thinking`, `text`, and `tool_use`.
+
+A minimal Python converter:
+
+```python
+import json
+from datetime import datetime
+
+SESSION_FILE = '/home/pi/.claude/projects/-home-pi-idea-agents-agent-researcher/<uuid>.jsonl'
+
+def fmt_ts(ts):
+    try:
+        return datetime.fromisoformat(ts.replace('Z','+00:00')).strftime('%H:%M:%S')
+    except:
+        return ts or ''
+
+def extract_text(content):
+    if isinstance(content, str):
+        return content.strip()
+    parts = []
+    for c in content:
+        if c.get('type') == 'text' and c.get('text','').strip():
+            parts.append(c['text'].strip())
+        elif c.get('type') == 'tool_use':
+            parts.append(f"`[tool: {c['name']}]`")
+    return '\n\n'.join(parts)
+
+with open(SESSION_FILE) as f:
+    for line in f:
+        obj = json.loads(line.strip())
+        if obj.get('type') not in ('user', 'assistant'):
+            continue
+        role = obj['type']
+        ts = fmt_ts(obj.get('timestamp',''))
+        content = obj.get('message', {}).get('content', '')
+        text = extract_text(content) if isinstance(content, list) else content.strip()
+        if text:
+            prefix = '**You**' if role == 'user' else '**Compass**'
+            print(f'### {prefix} `[{ts}]`\n\n{text}\n')
+```
+
+To find the right `<uuid>`: list `~/.claude/projects/<path-hash>/` sorted by modification time — the most recently changed `.jsonl` is the current session.
+
+### Example output
+
+See `outputs/2026-03-20-1300-session-and-memory-export.md` for an export of today's session (2026-03-20) including both memory files and the full conversation, produced using the converter above.
+
+---
+
 ## Files Reference
 
 | File | Purpose |
