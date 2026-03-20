@@ -1,4 +1,6 @@
-> **Question:** Document the operational flow of the virtual company — triggers, outputs, cross-agent involvement, automation. Compare the standup-driven model with a simpler CEO-driven model. Reframe heartbeats and standup. Include a diagram.
+> **Question:** Document the operational flow of the virtual company — triggers, outputs, cross-agent involvement, automation. Compare the standup-driven model with a simpler CEO-driven model. Reframe heartbeats and standup. Include a diagram. Clarify the different output types and the cross-agent task mechanism including cycle prevention.
+>
+> _v2 — updated 2026-03-20: output types expanded, cross-agent mechanism detailed, infinite cycle prevention documented._
 
 ---
 
@@ -93,44 +95,173 @@ flowchart TD
 
 ---
 
-### Triggers and outputs — complete reference
+### Output types
 
-| Trigger | Who starts it | Agent(s) involved | Output |
-|---------|--------------|-------------------|--------|
-| CEO message to agent | CEO | 1 primary + 1+ reviewers (auto) | PR, doc, proposal, report |
-| CEO approves plan | CEO | Primary agent | Execution begins |
-| CEO amends output | CEO | Primary agent (revises) | Updated PR / doc |
-| CEO rejects output | CEO | Primary agent | Task cancelled, MC updated |
-| Agent creates review task | Primary agent (automated) | Reviewer agent | PR comment, annotation, flag |
-| **[auto-trigger]** new task on board | pi cron (automated) | Reviewer agent | Response written to shared output |
-| CEO merges PR | CEO | None (git event) | Main branch updated |
+Four distinct output types are produced in this system. They differ in scope, permanence, and what the CEO must do with them.
 
 ---
 
-### The auto-trigger mechanism
+#### PR — Pull Request
 
-This is the one place where the system does something without the CEO. It is narrow, non-LLM, and reversible.
+**What it is:** A proposed change to a Git repository, submitted as a branch diff waiting for merge.
 
-**How it works:**
+**When it is produced:**
+- Whenever an agent changes code, configuration, or documentation that lives in a repo
+- Always on a feature branch, never directly on `main`
+
+**Who produces it:** Developer agents only — Axle (Engine), Pixel (Console), Beacon (Site). QM and PM may open PRs on the `idea` repo for proposals or design docs, but never touch code repos.
+
+**Where it lands:** GitHub PR on the relevant repo (`agent-engine-dev`, `agent-console-dev`, `agent-site-dev`, `idea`)
+
+**What the CEO does:** Reviews the diff on GitHub → merges (approves) or requests changes (amends) via chat. No agent merges to `main`.
+
+**Cross-agent involvement:** Veri (QM) is the natural reviewer for all code PRs — she checks quality, consistency, and test coverage. Axle creating a PR → auto-triggers a Veri review task.
+
+---
+
+#### Design doc
+
+**What it is:** A structured document that defines the *approach* to a problem before implementation begins. It is a decision record, not a deliverable.
+
+**When it is produced:**
+- Before implementing any feature with significant architectural choices or unknowns
+- When QM flags concerns during a PR review that require a design decision first
+- When the CEO asks an agent to think through an approach before coding
+
+**Who produces it:** Developer agents (primarily Axle) at the CEO's request, or proposed by any agent when they recognise a decision needs to be made before work can proceed.
+
+**Where it lands:** Written as a markdown file, committed via PR to the `idea` repo under `design/`. Once merged, it becomes the reference document for implementation.
+
+**What the CEO does:** Reads and approves by merging the PR. A design doc PR is lightweight — no code, just thinking. CEO can request changes before implementation begins.
+
+**Cross-agent involvement:** QM reviews all design docs before the CEO sees them (auto-triggered). This is the right time to catch architectural problems — cheaper than finding them during implementation.
+
+---
+
+#### Proposal
+
+**What it is:** A structured argument for adding a new item to the backlog. It is the entry point for all new work.
+
+**When it is produced:**
+- When any agent identifies a new need, gap, or opportunity not already in the backlog
+- When the CEO has an idea and wants it shaped before it becomes a task
+- When a field partner or grant requirement surfaces a product need (Marco's domain)
+
+**Who produces it:** Any agent. Marco (Programme Manager) most often — field reports frequently surface product needs. Axle raises technical proposals (refactors, infrastructure). QM raises cross-cutting concerns (privacy, consistency).
+
+**Where it lands:** Written as `proposals/YYYY-MM-DD-<topic>.md`, committed via PR to the `idea` repo. The PR is the collaboration surface — other agents add their perspective as PR comments before the CEO sees it.
+
+**What the CEO does:** Reviews the enriched proposal (with cross-agent comments) → merges (creates a task in MC from it) or closes with a reason.
+
+**Cross-agent involvement:** Proposals explicitly tag the agents whose input is needed. This is the one case where multiple agents review in parallel rather than sequentially — each contributes a comment to the PR. This is also a case where the CEO *manually* decides who to ask, not the auto-trigger mechanism.
+
+---
+
+#### Report
+
+**What it is:** A structured narrative document — not a code change, not a decision record. It summarises state, activity, or findings for human consumption.
+
+**When it is produced:**
+- Field partner updates and school visit summaries (Marco)
+- Grant application progress and deadline tracking (Marco)
+- Quality reports — test coverage, open issues, drift from design docs (Veri)
+- Standup contributions (all agents, when standup is triggered)
+
+**Who produces it:** Marco (Programme Manager) and Veri (QM) primarily. Reports are Marco's main output type. Developer agents rarely produce reports — their status is visible in PRs and MC tasks.
+
+**Where it lands:** Written directly to the agent's workspace or to `standups/`, committed to the `idea` repo. Reports do not go through a PR (they are not proposals or code). They are committed directly to `main` (or to the agent's own repo).
+
+**What the CEO does:** Reads and decides whether to act. A report may prompt the CEO to start a new work cycle (e.g. "Marco's field report mentions X — let's add that to the backlog"), but the report itself is not a work output that requires approval.
+
+**Cross-agent involvement:** Reports are usually self-contained. Exception: if Marco's grant report reveals a technical dependency, she creates a review task for Axle to assess feasibility before the report is finalised.
+
+---
+
+### Triggers and outputs — complete reference
+
+| Trigger | Who starts it | Agent(s) involved | Output type |
+|---------|--------------|-------------------|-------------|
+| CEO message to agent | CEO | 1 primary + auto reviewer | PR / design doc / proposal / report |
+| CEO approves plan | CEO | Primary agent | Execution begins |
+| CEO amends output | CEO | Primary agent (revises) | Updated version of same output type |
+| CEO rejects output | CEO | Primary agent | Task cancelled, MC updated |
+| Agent creates `auto-review` task | Primary agent | Reviewer agent (auto-triggered) | PR comment / annotation / flag |
+| **[auto-trigger]** new `auto-review` task detected | pi cron | Reviewer agent only | Response appended to original output |
+| CEO merges PR | CEO | None (git event) | Main branch updated, task → Done |
+
+---
+
+### The cross-agent task mechanism
+
+#### How Agent A creates a task for Agent B
+
+During its session, Agent A calls the MC API:
 
 ```
-pi cron (every 2 min, ~zero cost):
-  for each agent board:
-    check MC API for tasks in inbox created in last 3 min
-    if found → send isolated trigger to gateway API
-               prompt: "You have a new review task. Read it and respond."
-               delivery: write response to task comment (no Telegram needed)
+POST /api/v1/agent/boards/{agent_b_board_id}/tasks
+{
+  "title": "Review: [Axle's PR #14 — standup template implementation]",
+  "description": "Axle has completed task c74d6a8d (Scan Solution Description).\n\nPlease review:\n- PR: https://github.com/koenswings/agent-engine-dev/pull/14\n- Check: test coverage, consistency with PROCESS.md, no regressions\n\nRespond by adding a review comment on the PR (approve / request changes).\nMark this task done when complete.\n\n⚠ This is a depth-1 auto-review task. Do not create further tasks.",
+  "status": "inbox",
+  "tags": ["auto-review"]
+}
 ```
 
-**Why this is safe:**
-- Only fires for newly created tasks (3-minute window prevents double-triggers)
-- The agent's response is an isolated session — it reads the task, writes a comment, exits
-- No plan mode required for review tasks (they are scoped and bounded)
-- CEO sees the review comment as part of Agent A's output before making any decision
-- No tokens spent unless there is actually a new task
+Key properties of a review task:
+- Created on **Agent B's board**, not Agent A's board
+- Tagged `auto-review` — this is the signal to the pi cron
+- Title prefixed with "Review:" — distinguishes it visually in MC
+- Description is fully self-contained: Agent B should need no further context to act
+- Description explicitly flags it as depth-1 (no further tasks)
 
-**What Agent B produces:**
-Agent B reads Agent A's PR or document, writes a comment on it (either as a PR review or as an MC task comment), and closes the review task. Agent A's session can then incorporate that comment in a follow-up if needed.
+#### The pi cron (`check-new-tasks.sh`)
+
+```
+pi cron, every 2 minutes, no LLM:
+
+1. For each agent board:
+   a. Fetch tasks tagged "auto-review" with status "inbox"
+   b. For each such task:
+      - Check triggered-tasks.log: has this task ID been triggered before?
+      - If YES → skip (prevents double-trigger on retries)
+      - If NO:
+        i.  Mark task status → "in_progress" via MC API
+            (prevents a second cron run from triggering the same task)
+        ii. Append task ID to triggered-tasks.log
+        iii. Fire isolated gateway session for Agent B:
+             prompt = task title + description
+             sessionTarget = "isolated"
+             delivery = { mode: "announce", channel: "last" }
+```
+
+The `triggered-tasks.log` is a simple flat file at `/home/pi/idea/logs/triggered-tasks.log`. One task ID per line. Never deleted — it is the definitive record of what has been auto-triggered.
+
+#### Why there are no infinite cycles
+
+**Three independent guards, each sufficient on its own:**
+
+**Guard 1 — Instruction (primary)**
+Agent B's SOUL.md and AGENTS.md include a hard rule: _"If your current session was triggered by an `auto-review` task, your only actions are: read the tagged artifact, write a response to it, mark the task done, exit. Do not create tasks of any kind during this session."_
+
+Agent B knows this because it reads SOUL.md at the start of every session. Auto-triggered isolated sessions include the task description, which also contains the ⚠ depth-1 warning.
+
+**Guard 2 — Tag propagation (mechanical)**
+The pi cron only auto-triggers tasks tagged `auto-review`. If Agent B were to create a task during an auto-triggered session (violating Guard 1), that task would only be auto-triggered if Agent B also tagged it `auto-review`. Since the instruction explicitly prohibits creating tasks at all, tagging one `auto-review` would require two violations simultaneously.
+
+**Guard 3 — Triggered log (mechanical)**
+Even if Guards 1 and 2 both failed and a depth-2 `auto-review` task somehow appeared, `triggered-tasks.log` ensures each task ID is only triggered once. A depth-2 task would be triggered once, Agent C would respond, and the chain would stop — no further tasks would be created by a depth-2 session.
+
+**In practice:** Guard 1 is the operative rule. Guards 2 and 3 are safety nets that cost nothing to maintain.
+
+#### The depth boundary — why one auto-triggered round is enough
+
+One round of auto-triggered review is sufficient because:
+- The review task is scoped to a specific, bounded question (does this PR meet quality standards? is this design technically feasible?)
+- Agent B's response is advisory — it does not change the primary output, it annotates it
+- The CEO is the decision-maker for anything beyond a binary quality check
+- If Agent B's review raises a concern requiring further work, that becomes part of the CEO's decision ("approve with Veri's caveats" or "send back to Axle") — not an autonomous chain
+
+The rule is: **agents can initiate cross-agent involvement once per task iteration. The reviewer responds and stops. The CEO decides what happens next.**
 
 ---
 
