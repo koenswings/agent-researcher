@@ -358,25 +358,26 @@ Access Mission Control at `https://openclaw-pi.tail2d60.ts.net:4000`. OpenClaw C
 | `quality-manager` | Request a cross-project review or PR analysis |
 | `programme-manager` | "Plan next school visit", "Draft donor update", "What grants should we apply for?", "Write a Kolibri guide for teachers" |
 
-### A Typical CEO Day
+### A Typical CEO Interaction
 
 ```
-Morning
-  └─ standups/YYYY-MM-DD.md: read the completed standup (auto-generated overnight)
-  └─ Add CEO close section: decisions, actions, threads to open
-  └─ GitHub: merge any PRs that are ready
+Start a work cycle
+  └─ Open the relevant agent's tab in Mission Control (or message via Telegram)
+  └─ "Start task: [description]" — agent shows plan, CEO approves, work begins
+  └─ Agent produces output (PR / design doc / proposal / report) + auto-triggers a reviewer
+  └─ CEO reviews the final output (agent's work + reviewer's annotation)
+  └─ GitHub: merge if output is code; approve via chat otherwise
 
-During the day
-  └─ Mission Control: create task, assign to agent, approve plan in chat
-  └─ Mission Control (chat): "I've read your PR — change X to Y" → agent updates branch → review again
-  └─ GitHub: merge when satisfied
+Check for alerts (Telegram)
+  └─ Heartbeat alerts from CI failures or grant deadlines appear in Telegram
+  └─ CEO decides whether to act; opens the relevant agent tab if so
 
-As needed (WhatsApp)
-  └─ Message programme-manager directly: "draft a donor update" → approve plan → agent delivers draft PR
-  └─ programme-manager posts to IDEA supporters group after CEO approval
+Optional: weekly visibility check
+  └─ Send /standup in Telegram → all agents contribute current status
+  └─ CEO reviews; adjusts any agent's direction at next interaction
 ```
 
-**Key mental model:** Mission Control is where you see the full picture and assign work. Agent tabs are where you have the conversation and approve plans. GitHub is where you accept finished work.
+**Key mental model:** You are always the initiating trigger and the final gate. Agents act when you start them and stop when you approve their output. The only automated behaviour is: reviewer agents respond to review tasks without CEO intervention (bounded, one round, no further chaining).
 
 ---
 
@@ -445,50 +446,99 @@ The same channel works in reverse: the agent sends guidance outward. When a new 
 
 ---
 
-## Scheduling and Autonomous Behaviour
+## Work Cycle and Automated Behaviour
 
-Agents operate on-demand: they respond when the CEO opens a chat tab, assigns a task, or sends a WhatsApp message. This keeps costs predictable and makes every agent invocation intentional. Scheduled activity is limited to two lightweight cron scripts (no LLM) and the automated morning standup chain.
+### The work cycle
 
-**Agent heartbeats are disabled by default.** Polling an empty board every 10–30 minutes produces no value and consumes budget on every invocation. Heartbeats should be re-enabled per agent only when there is a sustained flow of active tasks that genuinely benefit from periodic monitoring — and at a cadence matched to how fast the relevant state actually changes (daily for programme-manager; every 1–2 hours at most for developer agents).
+Every piece of work follows the same cycle, initiated by the CEO:
 
-OpenClaw provides two native mechanisms that cover every scheduled need.
+```
+CEO → Agent A: "Start task: [description]"
+Agent A: shows plan → CEO approves → executes
+Agent A: produces output (PR / design doc / proposal / report)
+Agent A: creates a review task on Veri's (or relevant reviewer's) board [auto-review tag]
+  └─ pi cron detects the new task (every 2 min, no LLM)
+  └─ wakes reviewer in isolated session
+  └─ reviewer reads output, writes response (PR comment / annotation), marks task done
+CEO: reviews Agent A's output + reviewer's annotation
+CEO: approve → task Done | amend → Agent A revises | reject → task Cancelled
+```
 
-### Heartbeat — routine monitoring on an interval
+The one automated step — reviewer agent responding to review tasks — runs without CEO intervention. It is bounded: one round, no further chaining. See "Cross-agent review mechanism" below.
 
-A heartbeat is a periodic wake-check. OpenClaw sends the agent a prompt at a configured interval. The agent reads `HEARTBEAT.md`, runs its checks, and returns `HEARTBEAT_OK` if nothing needs attention.
+### Output types
 
-**Currently disabled for all agents.** The heartbeat infrastructure remains available and can be re-enabled per agent via `openclaw.json` when warranted. The correct cadence when re-enabled:
+| Type | When produced | Who | CEO action |
+|------|--------------|-----|-----------|
+| **PR** | Any code/config/doc change ready to merge | Developer agents (Axle, Pixel, Beacon) | Merge on GitHub |
+| **Design doc** | Before complex implementation; when approach needs alignment | Developer agents, at CEO request | Approve by merging PR to `design/` |
+| **Proposal** | New backlog item identified | Any agent (Marco most often) | Approve by merging PR → creates MC task |
+| **Report** | Field updates, grants, quality summary, standup contributions | Marco, Veri | Read and decide; may prompt new cycle |
 
-| Agent | Reason to heartbeat | Max cadence |
-|-------|---------------------|-------------|
-| engine-dev, console-dev, site-dev | New PRs, CI results | Every 2h, 08:00–20:00 |
-| quality-manager | Stale PRs awaiting review | Every 2h, 08:00–20:00 |
-| programme-manager | Grant deadlines, pending drafts | Once daily at 09:00 |
+### Cross-agent review mechanism
 
-### Cron — exact-time triggers
+When Agent A finishes primary work, it creates a review task on the reviewer's board via the MC API:
 
-Cron triggers an agent or script at a precise time. Used for the BACKLOG.md refresh and the automated morning standup chain.
+```
+POST /api/v1/agent/boards/{reviewer_board_id}/tasks
+{
+  "title": "Review: [task description]",
+  "description": "...[fully self-contained: what, where, what to respond with]...\n\n⚠ This is a depth-1 auto-review task. Do not create further tasks.",
+  "tags": ["auto-review"]
+}
+```
 
-### Scheduled activities
+The pi cron (`scripts/check-new-tasks.sh`, runs every 2 minutes) detects tasks tagged `auto-review` in `inbox` status, immediately marks them `in_progress` (prevents double-trigger), logs the task ID to `logs/triggered-tasks.log`, and fires an isolated gateway session for the reviewer agent.
 
-| Activity | Mechanism | Schedule | What |
-|----------|-----------|----------|------|
-| BACKLOG.md refresh | Cron script (no LLM) | Every 2h, 07:00–20:00 | `scripts/export-backlog.sh` queries MC REST API, commits updated `BACKLOG.md` to `idea/` org root |
-| Standup seed | Cron script (no LLM) | 07:30 Mon–Fri | Generates context (git log, open PRs, BACKLOG.md diff, new proposals); hashes it; writes `standups/YYYY-MM-DD.md`; skips if hash unchanged since yesterday |
-| Standup summary | Cron — Quality Manager | 07:35 Mon–Fri | QM reads standup file; if skipped, does nothing; otherwise writes the Summary section and QM's own contribution |
-| Standup — engine-dev | Cron — engine-dev agent | 07:45 Mon–Fri | Reads standup file; contributes if standup is active, skips if marked skipped |
-| Standup — console-dev | Cron — console-dev agent | 07:55 Mon–Fri | Same |
-| Standup — site-dev | Cron — site-dev agent | 08:05 Mon–Fri | Same |
-| Standup — programme-manager | Cron — programme-manager agent | 08:15 Mon–Fri | Same |
-| All agent heartbeats | — | Disabled | Re-enable per agent when active task flow justifies it |
+**Cycle prevention — three guards:**
+1. **Instruction**: reviewer SOUL.md hard-codes that auto-review sessions must not create tasks
+2. **Tag propagation**: cron only fires for `auto-review` tasks — creating a further auto-review task requires two simultaneous violations
+3. **Triggered log**: each task ID is only ever triggered once regardless of status changes
 
-### Change detection — skip standup when nothing changed
+**Default reviewer assignments:**
+- All developer PRs and design docs → Veri (Quality Manager)
+- Programme Manager technical feasibility questions → Axle (Engine Dev)
+- Proposals → Veri for cross-cutting consistency
 
-The standup seed script hashes the union of: recent commits across all repos, open PR titles and states, BACKLOG.md content, and filenames in `proposals/` and `discussions/`. The hash is stored at `standups/.last-context-hash`. If today's hash matches yesterday's, the script writes a skipped standup file and all downstream cron jobs do nothing. No LLM is woken.
+### Heartbeat — external event polling only
 
-**Monday exception:** always run the full standup on Mondays regardless of hash — the start-of-week context has value even if nothing changed over the weekend.
+Heartbeats are **not** periodic status checks. They are probes for external events the agent cannot be told about directly.
 
-The automated chain means the CEO arrives in the morning to a completed standup. All that remains is reading it and adding the CEO close section.
+**Use a heartbeat only when:**
+- An external system has a relevant state the agent should detect
+- That system cannot push a notification (no webhook available)
+- The event is time-sensitive enough to justify polling
+
+| External event | Agent | What triggers the alert |
+|----------------|-------|------------------------|
+| CI test failure on `main` | Axle (Engine Dev) | GitHub Actions status check |
+| Grant deadline < 4 weeks | Marco (Programme Mgr) | `grant-tracker.md` date comparison |
+| PR stale > 5 days | Veri (Quality Mgr) | GitHub open PR age check |
+
+When detected: agent sends a brief Telegram alert to CEO. Does not start work. CEO decides whether to act.
+
+**All agent heartbeats are currently disabled** (`every: "0m"` in `openclaw.json`). Re-enable per agent only when the specific external event warrants it.
+
+### Standup — optional visibility tool
+
+Standup is **not** a daily cron. It is a manual visibility check the CEO triggers when they want a broad picture before deciding what to start next.
+
+```
+CEO sends: /standup  (in Telegram)
+  → standup-seed.sh runs on demand (same context: git log, PRs, BACKLOG.md)
+  → All agents contribute their current status sequentially
+  → CEO reviews; decides whether to adjust any agent's direction
+```
+
+Standup output does not create tasks and does not gate any work. The CEO follows up at their next interaction with each agent.
+
+### Cron jobs — the complete list
+
+| Script | Schedule | Purpose |
+|--------|----------|---------|
+| `scripts/check-new-tasks.sh` | Every 2 min, always | Detect `auto-review` tasks; trigger reviewer agents |
+| `scripts/standup.sh` | On demand (CEO `/standup`) | Runs standup-seed.sh + chains agent contributions |
+| heartbeat scripts | When re-enabled per agent | External event detection only |
 
 ---
 
@@ -512,36 +562,23 @@ accumulates silently.
 
 ---
 
-## Multi-Agent Dialogue — Standups and Discussion Threads
+## Multi-Agent Dialogue
 
-### The vision
+### How agents coordinate
 
-A standup is not a summary. It is a forum where each agent shares what they are working on,
-what new insights they have developed, and what questions or concerns they have for the team.
-Other agents complement, critique, or build on what was said. New ideas are explored through
-dialogue between stakeholders. The belief is that this kind of multi-stakeholder conversation
-drives innovation and quality that no individual agent — or any single summary — can produce.
+Agents cannot talk to each other directly. Coordination happens through three mechanisms:
 
-### The architectural reality
+1. **Review tasks** — the primary mechanism. Agent A creates a scoped review task on Agent B's board. Agent B responds automatically (one round, no chaining). This is the default for all work output.
 
-OpenClaw agents run in separate Claude Code sessions. They cannot talk to each other directly
-or simultaneously. The only shared medium is the filesystem (all repos mounted into the same
-container directory at `/home/node/workspace/`).
+2. **Discussion threads** — for topics that need more depth than a single review round. Any agent opens `discussions/YYYY-MM-DD-<topic>.md` at the org root, tags relevant agents with `@agent-id`. The CEO opens each tagged agent's tab to gather their input. Threads stay open until the CEO closes them with a decision.
 
-"Dialogue" is approximated through three mechanisms:
-1. **Sequential contribution to a shared document** — each agent reads what came before, then
-   adds their voice, so later agents naturally respond to earlier ones
-2. **Persistent discussion threads** — topic-based files in `discussions/` (org root) that any agent
-   can contribute to over time
-3. **@-mention convention** — agents signal when they need a specific other agent's input,
-   giving the CEO a clear guide for which tab to open next
+3. **@-mention convention** — in any shared document (proposal, design doc, standup), agents use `@agent-id` to signal that a specific agent's input is needed. The CEO reads @-mentions as a guide for which tab to open next.
 
-The CEO acts as **facilitator**, not just audience. They decide which agents participate, in
-what order, and when a dialogue has reached a useful conclusion.
+The CEO acts as **facilitator**: they decide when a discussion has reached a useful conclusion and what the decision is.
 
 ---
 
-### Mechanism 1: The Roundtable Standup
+### Standup format (when CEO-triggered)
 
 A structured shared document where agents contribute sequentially. Each agent reads the whole
 file before writing — so later agents naturally respond to earlier ones.
@@ -604,7 +641,7 @@ Token counts are self-reported estimates by each agent. The QM summary step can 
 
 #### Flow
 
-The standup runs automatically overnight. The CEO arrives to a completed file.
+The standup runs on demand, triggered by the CEO via `/standup` in Telegram. The flow is sequential — QM first, then developers, then programme manager — so later agents read earlier contributions and respond to them.
 
 1. **07:30** — `standup-seed.sh` (no LLM): generates context from git log, GitHub API, BACKLOG.md; computes hash; compares to `standups/.last-context-hash`
    - If **unchanged**: writes `standups/YYYY-MM-DD.md` with "Standup skipped — no changes since yesterday." All downstream cron jobs detect this and do nothing.
@@ -631,7 +668,7 @@ If an agent's board has been empty for several consecutive standups, suppress it
 
 ---
 
-### Mechanism 2: Discussion Threads — discussions/
+### Discussion Threads — discussions/
 
 Standups surface ideas and concerns. Some need more depth than a standup can give. Discussion
 threads provide a persistent, topic-based forum for this deeper exploration.
@@ -661,7 +698,7 @@ threads provide a persistent, topic-based forum for this deeper exploration.
 
 ---
 
-### Mechanism 3: @-mention convention
+### @-mention convention
 
 In any shared document — standup, discussion thread, proposal — agents use `@agent-id` to
 signal that a specific agent's input is needed:
