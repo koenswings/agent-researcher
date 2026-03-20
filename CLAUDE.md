@@ -43,16 +43,19 @@ Research is organised by topic. Each topic has its own folder under `research/`:
 ```
 research/
   <topic-slug>/
-    proposal.md    — always present: the core thinking and recommendations
-    <...>          — topic-specific deliverables (no fixed schema)
+    <descriptive-name>.md    — always present: the core design document
+    <...>                    — topic-specific deliverables (no fixed schema)
 ```
 
-The only consistent element across all topics is `proposal.md`. Additional files and folders depend entirely on what the topic produces.
+Each topic has one primary design document named after the content it describes — not a generic name like "proposal". These are living design documents: they are shaped iteratively and serve as the authoritative reference that guides implementation. Additional files and folders depend entirely on what the topic produces.
 
 **Active topics:**
-- `research/openclaw-initial-config/` — Initial OpenClaw configuration for launching the IDEA virtual company
+- `research/openclaw-initial-config/` — Design of the IDEA virtual company on OpenClaw
+  - `virtual-company-design.md` — core design document
   - `idea/` — staged org-root files (`CONTEXT.md`, `ROLES.md`, `PROCESS.md`, `BACKLOG.md`)
   - `agent-<role>/` — one folder per agent containing all its deployment files (`AGENTS.md`, `SOUL.md`, `IDENTITY.md`, `BOOTSTRAP.md`, `HEARTBEAT.md`, `TOOLS.md`, `USER.md`)
+- `research/tmux-vscode-setup/` — Per-agent tmux session isolation via VSCode terminal profiles
+  - `agent-terminal-design.md` — core design document
 
 ## Session
 
