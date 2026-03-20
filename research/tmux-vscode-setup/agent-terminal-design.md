@@ -216,4 +216,71 @@ Add `"terminal.integrated.gpuAcceleration": "off"` to `.vscode/settings.json`.
 
 ---
 
+## Claude Code Session Context
+
+### What is a "session"?
+
+A Claude Code session is an **in-memory conversation**. It is the running `claude` process. As long as that process is alive, Claude holds the full conversation context in memory — every message you sent, every response it gave, every tool call and its output.
+
+When `claude` exits, that context is gone. Nothing is automatically reloaded when you start `claude` again.
+
+### What tmux actually provides
+
+tmux does not give Claude any special context. What it does is **keep the process alive**.
+
+Without tmux: closing the VSCode terminal window kills the shell, which kills `claude`. Context lost.
+
+With tmux: the terminal window is just a view into the tmux session. Closing VSCode detaches from the session but the `claude` process keeps running inside it. Re-opening the terminal re-attaches to the same running process with its full in-memory context intact.
+
+This is process persistence, not session resumption.
+
+### Where things are stored on disk
+
+Claude Code writes several artefacts to `~/.claude/` during a session. These survive process exit but are **not reloaded** into a new `claude` process automatically.
+
+| What | Location | Persists after exit? | Reloaded on restart? |
+|---|---|---|---|
+| User inputs (your messages) | `~/.claude/history.jsonl` | Yes — global append-only log | No |
+| Full conversation (messages + Claude responses) | `~/.claude/projects/<path-hash>/<session-uuid>/subagents/*.jsonl` | Yes | No |
+| Tool call outputs (large results) | `~/.claude/projects/<path-hash>/<session-uuid>/tool-results/<tool-id>.txt` | Yes | No |
+| Project memory | `~/.claude/projects/<path-hash>/memory/MEMORY.md` | Yes | **Yes** — loaded at startup |
+| File edit history | `~/.claude/file-history/<session-uuid>/` | Yes | No |
+| Plans | `~/.claude/plans/*.md` | Yes | No |
+| Session metadata | `~/.claude/usage-data/session-meta/<session-uuid>.json` | Yes | No |
+
+The one thing that **is** reloaded on every new `claude` process: **project memory** (`MEMORY.md` and any files listed in it) and **`CLAUDE.md`** from the workspace. Everything else is written as an audit trail but not fed back to Claude.
+
+### What "context" means in practice
+
+When you open a terminal in an agent workspace and `claude` is already running in the tmux session, the context Claude has is:
+
+- Every message and response from the current process start (in memory)
+- The contents of `CLAUDE.md` (loaded at startup)
+- The contents of any memory files (loaded at startup)
+- Any files it has read during the current conversation
+
+When you open a terminal and `claude` is **not** running (first start, or after a reboot):
+
+- A fresh process starts with no conversation history
+- `CLAUDE.md` is loaded
+- Memory files are loaded
+- Nothing else — a clean slate within the project's established identity
+
+### Implications for the IDEA agent setup
+
+Each named tmux session (`claude-agent-researcher`, `claude-engine`, etc.) maps to one running `claude` process in one workspace. As long as the session stays alive:
+
+- The agent accumulates conversational context across multiple interactions in the same process
+- No context is lost between one VSCode terminal close and the next open
+
+When the session dies (reboot, crash, manual kill):
+
+- The agent starts fresh from CLAUDE.md and memory files only
+- Conversational history from before the restart is not recoverable by Claude (though the JSONL files remain on disk for human review)
+- This is why important decisions and facts belong in **memory files**, not just in conversational history
+
+The per-agent memory system (writing to `memory/MEMORY.md` and linked files) is specifically designed to bridge this gap: it captures what matters from conversation into a form that survives process restarts.
+
+---
+
 *Compass · Strategic Advisor · IDEA*
