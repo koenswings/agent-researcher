@@ -63,18 +63,7 @@ Research is organised by topic under `research/<topic-slug>/`. Each topic has on
 
 ## Printing Documents to PDF
 
-Use the engine project's `md-to-pdf` wrapper script:
-
-```bash
-cd /home/pi/projects/engine && ./md-to-pdf <input.md> <output.pdf>
-```
-
-- Script lives at `/home/pi/projects/engine/md-to-pdf` (shell wrapper for `script/md-to-pdf.ts`)
-- Requires absolute paths for files outside the engine project
-- Output PDF is written to the specified path (defaults to same location as input if omitted)
-- Uses `wkhtmltopdf` with VS Code preview styles; A4, 15mm margins
-
-**Always regenerate the PDF after any update to a design document.** PDF filename matches the `.md` filename in the same folder.
+**Note:** `/home/pi/projects/engine/` has been moved to `/home/pi/obsolete/projects/engine/`. The `md-to-pdf` script location needs to be verified before next use — check `/home/pi/idea/engine/` or the `obsolete/` path.
 
 ---
 
@@ -90,11 +79,11 @@ All 5 agents online in Mission Control as of 2026-03-01.
 
 | Agent | MC ID (short) | Board ID (short) | Session key prefix | Workspace path |
 |-------|--------------|------------------|--------------------|----------------|
-| Axle (Engine Dev) | `8a0b3f32` | `6bddb9d2` | `agent:lead-6bddb9d2` | `/home/pi/idea/workspace-lead-6bddb9d2-...` |
-| Pixel (Console Dev) | `bd2b264f` | `ac508766` | `agent:lead-ac508766` | `/home/pi/idea/workspace-lead-ac508766-...` |
-| Beacon (Site Dev) | `70404eba` | `7cc2a1cf` | `agent:lead-7cc2a1cf` | `/home/pi/idea/workspace-lead-7cc2a1cf-...` |
-| Veri (Quality Mgr) | `ac172302` | `d0cfa49e` | `agent:lead-d0cfa49e` | `/home/pi/idea/workspace-lead-d0cfa49e-...` |
-| Marco (Programme Mgr) | `c1aeb3f8` | `3f1be9c8` | `agent:lead-3f1be9c8` | `/home/pi/idea/workspace-lead-3f1be9c8-...` |
+| Axle (Engine Dev) | `8a0b3f32` | `6bddb9d2` | `agent:lead-6bddb9d2` | `/home/pi/idea/agents/agent-engine-dev/` |
+| Pixel (Console Dev) | `bd2b264f` | `ac508766` | `agent:lead-ac508766` | `/home/pi/idea/agents/agent-console-dev/` |
+| Beacon (Site Dev) | `70404eba` | `7cc2a1cf` | `agent:lead-7cc2a1cf` | `/home/pi/idea/agents/agent-site-dev/` |
+| Veri (Quality Mgr) | `ac172302` | `d0cfa49e` | `agent:lead-d0cfa49e` | `/home/pi/idea/agents/agent-quality-manager/` |
+| Marco (Programme Mgr) | `c1aeb3f8` | `3f1be9c8` | `agent:lead-3f1be9c8` | `/home/pi/idea/agents/agent-programme-manager/` |
 
 **Architecture note:** MC board leads (`agent:lead-{board_id}:main`) and the original pre-configured agents (`agent:engine-dev:main`) are separate instances. Board leads are authoritative. Pre-configured sessions are orphaned but still running.
 
