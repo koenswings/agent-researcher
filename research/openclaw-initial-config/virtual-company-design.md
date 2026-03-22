@@ -72,16 +72,16 @@ Each IDEA role becomes one agent entry in `openclaw.json`, with its own workspac
 
 | Agent id | Workspace (host path) | Role |
 |----------|----------------------|------|
-| `engine-dev` | `/home/pi/idea/agents/agent-engine-dev` | Engine software developer |
-| `console-dev` | `/home/pi/idea/agents/agent-console-dev` | Console UI developer (Solid.js, Chrome Extension) |
-| `site-dev` | `/home/pi/idea/agents/agent-site-dev` | Builds and maintains the IDEA public website |
-| `quality-manager` | `/home/pi/idea/agents/agent-quality-manager` | Cross-project quality and consistency reviewer |
-| `programme-manager` | `/home/pi/idea/agents/agent-programme-manager` | Field coordination, school support, teacher guides, supporter comms, fundraising |
-| `researcher` | `/home/pi/idea/agents/agent-researcher` | Strategic advisor to the CEO — org structure, governance, long-term direction |
+| `engine-dev` (Axle) | `/home/pi/idea/agents/agent-engine-dev` | Engine software developer |
+| `console-dev` (Pixel) | `/home/pi/idea/agents/agent-console-dev` | Console UI developer (Solid.js, Chrome Extension) |
+| `site-dev` (Beacon) | `/home/pi/idea/agents/agent-site-dev` | Builds and maintains the IDEA public website |
+| `quality-manager` (Veri) | `/home/pi/idea/agents/agent-quality-manager` | Cross-project quality and consistency reviewer |
+| `programme-manager` (Marco) | `/home/pi/idea/agents/agent-programme-manager` | Field coordination, school support, teacher guides, supporter comms, fundraising |
+| `researcher` (Compass) | `/home/pi/idea/agents/agent-researcher` | Strategic advisor to the CEO — org structure, governance, long-term direction |
 
-Each agent has its own dedicated git repository with `AGENTS.md` at the repo root. This applies to the 5 operational agents. The `researcher` agent is the exception: it runs as a **Claude Code CLI session** (in a tmux window), not as an OpenClaw agent session. Claude Code automatically reads `CLAUDE.md` at startup, so `CLAUDE.md` serves the same role that `AGENTS.md` serves for the operational agents.
+All six agents have their own dedicated git repository. Each has a full set of identity files (`AGENTS.md`, `SOUL.md`, `IDENTITY.md`, `USER.md`, `TOOLS.md`, `HEARTBEAT.md`, `BOOTSTRAP.md`) at the repo root, committed to git and managed via the normal PR flow for protected repos.
 
-**Could researcher be added to Mission Control?** Yes — it could be added to `openclaw.json` and would then appear as a chat interface in Mission Control. The sandbox files (`SOUL.md`, `IDENTITY.md`, etc.) are already written for this. The trade-off is that the Claude Code session gives researcher full tool access (file reads, bash, web search, writing output files) and Claude Code's per-project memory system. An OpenClaw chat session would be more convenient but has limited tool access and different memory handling. The recommended approach is to keep researcher as a Claude Code session for deep strategic work, and revisit adding a lightweight Mission Control chat entry once OpenClaw's tool capabilities are better understood.
+**Researcher (Compass)** is a full OpenClaw agent accessible via Telegram and Mission Control — the same model as all other agents. It is not a special-case Claude Code CLI session. Its workspace is `/home/node/workspace/agents/agent-researcher/`.
 
 The `idea/` repo root is the shared company coordination layer — it holds no agent workspace content.
 
@@ -89,14 +89,16 @@ The `idea/` repo root is the shared company coordination layer — it holds no a
 
 Two distinct concepts:
 
-- **`workspace` in `openclaw.json`** — the agent's default working directory; where it "lives" and where its `AGENTS.md` is found.
+- **`workspace` in `openclaw.json`** — the agent's default working directory; where it "lives" and where its `AGENTS.md` is found. **This is set to the agent's code repo** (e.g. `/home/node/workspace/agents/agent-engine-dev`). The agent starts in its own repo and navigates from there.
 - **The Docker volume mount** — what the agent can actually access on disk.
 
 `/home/pi/idea` is mounted into the container as `/home/node/workspace`. All agent workspaces are subdirectories of that mount. Because they all run inside the same container against the same mount, every agent can read and write anywhere under `/home/node/workspace/` — not just its own workspace subdirectory.
 
-This is why the quality-manager (workspace: `/home/node/workspace/agents/agent-quality-manager`) can read `../../agents/agent-engine-dev` or the org root coordination files at `../../CONTEXT.md` — the full project tree is visible above it.
+This is why Veri (workspace: `/home/node/workspace/agents/agent-quality-manager`) can read `../agent-engine-dev/` or the org root coordination files at `../../CONTEXT.md` — the full project tree is visible.
 
-**Crucially, this is not changed by using separate git repos.** Whether the agent repos and the org root are separate repositories or a monorepo makes no difference to the Docker mount. Separate repos means separate git histories; it does not mean filesystem isolation. The shared workspace is the mount, not the git layout.
+**Agents are not sandboxed to their workspace.** The `sandbox` setting in `openclaw.json` is left unconfigured for board lead agents, so they can navigate the full mount. This is intentional: dev agents need to read org root files; Veri needs to read all code repos; Compass needs to read all workspaces.
+
+**Crucially, this is not changed by using separate git repos.** Separate repos means separate git histories; it does not mean filesystem isolation. The shared workspace is the Docker mount, not the git layout.
 
 ---
 
@@ -177,6 +179,26 @@ Every agent has its own dedicated git repository with `AGENTS.md` at the repo ro
 The `AGENTS.md` at each agent repo root applies uniformly without exceptions. Each agent's git history is clean and scoped. Adding a new agent means creating a new `agent-<role>/` repo.
 
 All repos are mounted into the same Docker container at `/home/node/workspace/`, so every agent can read and write across the full project tree regardless of repo boundaries. Separate repos means separate git histories, not filesystem isolation.
+
+---
+
+## Identity Files — Git-Managed
+
+Every agent repo contains a full set of identity files at the repo root:
+
+| File | Purpose |
+|------|---------|
+| `AGENTS.md` | Role definition — responsibilities, workflow, tech stack, every-session checklist |
+| `SOUL.md` | Values, behaviour, team norms, and how work flows — shared principles |
+| `IDENTITY.md` | Agent name, persona, emoji — confirmed during bootstrap |
+| `USER.md` | Profile of the CEO — preferences, working style |
+| `TOOLS.md` | Environment paths, API credentials, tool reference |
+| `HEARTBEAT.md` | External event polling checklist (disabled by default) |
+| `BOOTSTRAP.md` | First-session setup guide — deleted after first run |
+
+All identity files are committed to git and version-controlled. For branch-protected repos (`agent-engine-dev`, `agent-console-dev`, `agent-site-dev`, `agent-quality-manager`, `agent-programme-manager`), identity file updates go through a PR — opened by Compass and self-merged by the CEO (no approvals required; `required_approving_review_count: 0`). The `agent-researcher` repo is unprotected; Compass pushes identity changes directly.
+
+The `memory/` folder (`MEMORY.md` + daily logs) is gitignored — it is operational state, not design artefacts.
 
 ---
 
@@ -325,8 +347,9 @@ Agents read `BACKLOG.md` at session start via HEARTBEAT.md. It is versioned and 
 
 | Tool | Purpose | When you use it |
 |------|---------|-----------------|
-| **Mission Control** | Live Kanban across all 5 agents; task dispatch; agent chat and plan approval; activity timeline | Daily — the single interface for all agent interaction |
-| **GitHub** | Review and merge PRs (code and documents) | Whenever agents raise PRs |
+| **Telegram** | Day-to-day agent interaction — message any agent directly from your phone | Daily — the primary conversational interface |
+| **Mission Control** | Kanban across all 5 operational agents; task dispatch; approval management; activity timeline | When you need the broader operational view |
+| **GitHub** | Review and merge PRs (code, documents, identity files) | Whenever agents raise PRs |
 | **Terminal (SSH / Tailscale SSH)** | Pi administration, Docker, logs | Occasional |
 | **OpenClaw Control UI** | Low-level fallback if Mission Control is unavailable | Rarely |
 
@@ -381,9 +404,21 @@ Optional: weekly visibility check
 
 ---
 
-## WhatsApp — Outbound Agent Communication
+## Telegram — CEO ↔ Agent Communication (Live)
+
+Every agent — including Compass — is bound to a dedicated Telegram group via OpenClaw's native Telegram channel. The CEO can message any agent directly from a phone or browser. The bot is `@Idea911Bot`.
+
+Each agent has its own group (one-to-one with the CEO). Messages in that group go only to that agent. No agent can read another agent's Telegram group.
+
+This is the primary day-to-day interface. Mission Control's chat UI is an alternative when a richer view (board state, approval management) is useful.
+
+---
+
+## WhatsApp — Outbound Field Communication (Future)
 
 Beyond the CEO's own messaging access, WhatsApp opens direct-to-stakeholder communication channels that no other part of this stack provides. OpenClaw connects via **Baileys** — a WhatsApp Web protocol library — using a dedicated phone number registered on a cheap prepaid SIM. Agents appear in WhatsApp as a contact with that number, sandboxed from the CEO's personal account. They can post to groups and exchange messages with individuals without any access to the CEO's contacts or other chats.
+
+*Note: WhatsApp integration is not yet active. Telegram is the live channel. WhatsApp remains the intended channel for field worker liaison and supporter group updates.*
 
 All outbound messages go through the same CEO approval loop as every other agent output. Nothing is sent without an approved plan.
 
@@ -542,6 +577,26 @@ Standup output does not create tasks and does not gate any work. The CEO follows
 
 ---
 
+## Session Documentation
+
+**Every agent documents every session.** At the end of every substantive session, each agent writes a summary to `outputs/YYYY-MM-DD-HHMM-<topic>.md` in its own workspace, then commits and pushes.
+
+This creates a permanent, searchable record of every conversation across all agents. Format:
+
+```
+outputs/YYYY-MM-DD-HHMM-<short-topic>.md
+
+> **Task/Question:** <what was asked or assigned>
+
+[Body: what was done, decisions made, outputs produced]
+```
+
+For **Compass** this is the primary output format — every strategic response is written to `outputs/` in full, then committed. For **operational agents** it is a session-end summary alongside the task comments in Mission Control.
+
+The `outputs/` directory in each repo is committed to git and included in the normal PR/push flow. It is the human-readable conversation history for that agent.
+
+---
+
 ## Agent Memory
 
 IDEA's agents operate inside a governance structure where **the CEO should know what the agents
@@ -559,6 +614,10 @@ auditable, and CEO-approved.
 The same principle applies to shared knowledge. New facts about the product go into
 `CONTEXT.md` (org root) via PR. New operational patterns go into the relevant `AGENTS.md`. Nothing
 accumulates silently.
+
+**Session logs** (`memory/YYYY-MM-DD.md` and `MEMORY.md` in each workspace) are gitignored. They
+are ephemeral operational state — useful within a session, not part of the permanent record. The
+`outputs/` folder is the permanent record.
 
 ---
 

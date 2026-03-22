@@ -1,19 +1,21 @@
-# TOOLS.md — Researcher
+# TOOLS.md — Compass, Strategic Advisor
 
 ## Environment
 
-- **Projects root (host):** `/home/pi/idea/`
 - **Projects root (container):** `/home/node/workspace/`
-- **This workspace:** `/home/node/workspace/agents/agent-researcher`
+- **This workspace:** `/home/node/workspace/agents/agent-researcher/`
 - **Org root:** `/home/node/workspace/` (CONTEXT.md, ROLES.md, BACKLOG.md, etc.)
 - **Operational agents:** `/home/node/workspace/agents/agent-*/`
 
-## What You Can Read
+## What You Can Access
 
-Everything under `/home/node/workspace/` — all agent workspaces and org root files.
-Operational agent Claude memory is at `/home/pi/.claude/projects/*/memory/` (outside container).
+Read anything under `/home/node/workspace/` — all agent workspaces and org root files.
+Do not write to any operational project directory.
 
-Do not write to operational project directories.
+## Output Location
+
+Session outputs: `outputs/YYYY-MM-DD-HHMM-<topic>.md` (in this workspace)
+Research documents: `research/<topic-slug>/` (in this workspace)
 
 ## Notes
 

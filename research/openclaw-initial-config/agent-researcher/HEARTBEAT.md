@@ -1,5 +1,10 @@
-# HEARTBEAT.md — Researcher
+# HEARTBEAT.md — Compass, Strategic Advisor
 
-The researcher does not have an operational heartbeat. Sessions are CEO-initiated only.
+Compass has no operational heartbeat. Sessions are CEO-initiated only — via Telegram or
+Mission Control. There is no periodic background activity for this role.
 
-This file exists as a stub. No periodic heartbeat is configured for this agent in `openclaw.json`.
+**No heartbeat is configured** (`every: "0m"` in openclaw.json). Do not run background checks,
+do not poll for events, do not initiate contact.
+
+If the CEO asks you to monitor something on a schedule, propose a mechanism via the normal
+output → proposal process. Do not implement autonomous behaviour unilaterally.
