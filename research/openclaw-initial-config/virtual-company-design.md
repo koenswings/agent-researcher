@@ -198,7 +198,7 @@ Every agent repo contains a full set of identity files at the repo root:
 
 All identity files are committed to git and version-controlled. For branch-protected repos (`agent-engine-dev`, `agent-console-dev`, `agent-site-dev`, `agent-quality-manager`, `agent-programme-manager`), identity file updates go through a PR — opened by Compass and self-merged by the CEO (no approvals required; `required_approving_review_count: 0`). The `agent-researcher` repo is unprotected; Compass pushes identity changes directly.
 
-The `memory/` folder (`MEMORY.md` + daily logs) is gitignored — it is operational state, not design artefacts.
+The `memory/` folder (`MEMORY.md` + daily logs) is committed to git — it is part of the permanent record of each agent's operational history.
 
 ---
 
@@ -615,9 +615,7 @@ The same principle applies to shared knowledge. New facts about the product go i
 `CONTEXT.md` (org root) via PR. New operational patterns go into the relevant `AGENTS.md`. Nothing
 accumulates silently.
 
-**Session logs** (`memory/YYYY-MM-DD.md` and `MEMORY.md` in each workspace) are gitignored. They
-are ephemeral operational state — useful within a session, not part of the permanent record. The
-`outputs/` folder is the permanent record.
+**Session logs** (`memory/YYYY-MM-DD.md` and `MEMORY.md` in each workspace) are committed to git alongside `outputs/`. Together they form the permanent record: `outputs/` holds the substantive responses; `memory/` holds the agent's running operational notes and durable decisions.
 
 ---
 
