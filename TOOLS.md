@@ -1,40 +1,57 @@
-# TOOLS.md - Local Notes
+# TOOLS.md — Compass, COO & Strategic Advisor
 
-Skills define _how_ tools work. This file is for _your_ specifics — the stuff that's unique to your setup.
+## Environment
 
-## What Goes Here
+- **My repo:** `/home/node/workspace/agents/agent-researcher`
+- **Org root:** `/home/node/workspace/` (CONTEXT.md, BACKLOG.md, ROLES.md, skills/, agents/, etc.)
+- **Projects root (host):** `/home/pi/idea/`
+- **Shared skills:** `/home/node/workspace/skills/`
+- **All agent repos:** `/home/node/workspace/agents/agent-*/`
 
-Things like:
+## MC API
 
-- Camera names and locations
-- SSH hosts and aliases
-- Preferred voices for TTS
-- Speaker/room names
-- Device nicknames
-- Anything environment-specific
+- `BASE_URL=http://172.18.0.1:8000`
+- `AUTH_TOKEN` — load from `.env` in this directory (gitignored, never committed)
+- No dedicated MC board for Compass (strategic/ops role — work tracked in git, not MC tasks)
+- Use AUTH_TOKEN to read other agents' boards for cross-agent coordination and quality review
 
-## Examples
+See the **mc-api** shared skill for OpenAPI refresh, discovery policy, and usage examples:
+`/home/node/workspace/skills/mc-api/SKILL.md`
 
-```markdown
-### Cameras
+## Telegram
 
-- living-room → Main area, 180° wide angle
-- front-door → Entrance, motion-triggered
+- Bot token: read from `/root/.openclaw/openclaw.json` → `channels.telegram.botToken`
+- To send a file directly (e.g. a PDF): `curl -F document=@/path/to/file.pdf "https://api.telegram.org/bot<TOKEN>/sendDocument?chat_id=<CHAT_ID>"`
+- My group chat ID: `-5105695997`
 
-### SSH
+## GitHub Push & PR
 
-- home-server → 192.168.1.100, user: admin
+`gh` is not available in the sandbox. Use `git` + `curl` with `GITHUB_TOKEN` from `.env`.
 
-### TTS
-
-- Preferred voice: "Nova" (warm, slightly British)
-- Default speaker: Kitchen HomePod
+### Push a branch
+```bash
+source .env
+git remote set-url origin https://koenswings:${GITHUB_TOKEN}@github.com/koenswings/agent-researcher.git
+git push origin BRANCH_NAME
+git remote set-url origin https://github.com/koenswings/agent-researcher.git
 ```
 
-## Why Separate?
+### Open a PR
+```bash
+source .env
+curl -s -X POST "https://api.github.com/repos/koenswings/agent-researcher/pulls" \
+  -H "Authorization: token ${GITHUB_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"title\": \"PR TITLE\",
+    \"head\": \"BRANCH_NAME\",
+    \"base\": \"main\",
+    \"body\": \"PR description\"
+  }" | python3 -c "import sys,json; print(json.load(sys.stdin).get('html_url','error'))"
+```
 
-Skills are shared. Your setup is yours. Keeping them apart means you can update skills without losing your notes, and share skills without leaking your infrastructure.
+`GITHUB_TOKEN` must be present in `.env` (gitignored, never committed).
 
----
+## Notes
 
-Add whatever helps you do your job. This is your cheat sheet.
+_(Add setup quirks, path changes, or environment-specific observations here as discovered.)_
