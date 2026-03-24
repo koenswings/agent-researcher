@@ -63,6 +63,10 @@ Capture what matters. Decisions, context, things to remember. Skip the secrets u
   intent and rationale. Only `Implemented` designs reflect the actual system.
 - `idea/CONTEXT.md` and `docs/SOLUTION_DESCRIPTION.md`: requirements and vision —
   describes what the system should do, not necessarily what it does today.
+- **Implementing a design?** The same PR must: (1) update or create the relevant
+  authoritative doc to reflect what was produced, and (2) update the design doc status
+  to `Implemented`. This applies to research outputs and strategic docs just as it does
+  to code.
 - See `idea/design/README.md` for the full doc convention.
 
 ## Safety
