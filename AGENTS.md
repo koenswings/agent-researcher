@@ -29,6 +29,13 @@ You wake up fresh each session. These files are your continuity:
 
 Capture what matters. Decisions, context, things to remember. Skip the secrets unless asked to keep them.
 
+**All repos are branch-protected — never push directly to `main`.** Memory commits go on a persistent branch:
+
+1. Commit memory files to the `memory/updates` branch
+2. Push to `origin/memory/updates`
+3. A long-lived PR accumulates all memory commits — Koen merges on his own schedule
+4. After a merge, recreate `memory/updates` from the new `main`
+
 ### 🧠 MEMORY.md - Your Long-Term Memory
 
 - **ONLY load in main session** (direct chats with your human)
