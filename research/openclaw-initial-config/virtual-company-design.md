@@ -20,7 +20,7 @@ This document describes how OpenClaw is configured to run the IDEA virtual compa
 - [CEO Tools & Daily Workflow](#ceo-tools--daily-workflow)
 - [WhatsApp — Outbound Agent Communication](#whatsapp--outbound-agent-communication)
 - [Scheduling and Autonomous Behaviour](#scheduling-and-autonomous-behaviour)
-- [Agent Memory](#agent-memory) — includes startup checklists; see also `AGENT_STARTUP.md`
+- [Agent Memory](#agent-memory) — includes startup checklists and the two loading mechanisms
 - [Multi-Agent Dialogue — Standups and Discussion Threads](#multi-agent-dialogue--standups-and-discussion-threads)
 - [Backlog Growth Process](#backlog-growth-process)
 - [Agent Skills](#agent-skills)
@@ -621,7 +621,7 @@ accumulates silently.
 
 ### How agents load context at session start
 
-See **`AGENT_STARTUP.md`** at the org root for the full reference. Summary:
+Summary:
 
 **Two mechanisms exist:**
 
@@ -1067,7 +1067,7 @@ Total: **8 repos** — 1 org root + 5 operational agent repos + 1 researcher rep
 - [ ] Migrate existing backlog items from BACKLOG.md into Mission Control
 - [ ] BOOTSTRAP sessions for all new agents
 - [x] Define OpenClaw cron and heartbeat schedule for all agents: morning standup seed, BACKLOG.md export, and per-agent heartbeat intervals and active hours
-- [ ] Compass session context: update `AGENTS.md` for researcher to read `CLAUDE.md` and `research/openclaw-initial-config/virtual-company-design.md` at every session start — currently these are not auto-loaded; requires either (a) enabling elevated permissions for Compass from Telegram (`agents.list[].tools.elevated.allowFrom.telegram`) so it can self-edit its own AGENTS.md, or (b) CEO edits the file directly on the Pi. Correct startup checklist is documented in `AGENT_STARTUP.md` and in the Agent Memory section of this doc.
+- [ ] Compass session context: update `AGENTS.md` for researcher to read `CLAUDE.md` and `research/openclaw-initial-config/virtual-company-design.md` at every session start — currently these are not auto-loaded; requires either (a) enabling elevated permissions for Compass from Telegram (`agents.list[].tools.elevated.allowFrom.telegram`) so it can self-edit its own AGENTS.md, or (b) CEO edits the file directly on the Pi. Correct startup checklist is documented in the Agent Memory section of this doc.
 
 ### app-openclaw / Platform
 - [ ] **Test first:** validate permanently attached USB SSD as system disk — provision a trivial app with `build-app-instance`, reboot, confirm instance auto-starts; if not, submit Engine PR to process existing `/dev/engine` devices on startup
