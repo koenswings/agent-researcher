@@ -1000,7 +1000,7 @@ Total: **8 repos** — 1 org root + 5 operational agent repos + 1 researcher rep
 - [x] Standup model → roundtable format + discussion threads (see Multi-Agent Dialogue section)
 - [x] Operating layer → Mission Control from day one (see Mission Control section)
 - [x] BACKLOG.md → auto-export from MC via script (see Mission Control section)
-- [ ] Review and approve proposal in `/home/pi/idea/agents/agent-researcher/`
+- [x] Review and approve proposal in `/home/pi/idea/agents/agent-researcher/`
 - [x] Create `/home/pi/idea/` directory structure on Pi; move `engine` → `/home/pi/idea/agents/agent-engine-dev/` (Claude memory copied; git remote updated); `agent-researcher` already in place
 - [x] Update Docker volume mount in `compose.yaml`: `/home/pi/projects` → `/home/pi/idea`
 - [ ] Create `CONTEXT.md` at org root — draft covering mission, solution overview, key concepts, guiding principles
