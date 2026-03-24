@@ -20,7 +20,7 @@ This document describes how OpenClaw is configured to run the IDEA virtual compa
 - [CEO Tools & Daily Workflow](#ceo-tools--daily-workflow)
 - [WhatsApp — Outbound Agent Communication](#whatsapp--outbound-agent-communication)
 - [Scheduling and Autonomous Behaviour](#scheduling-and-autonomous-behaviour)
-- [Agent Memory](#agent-memory)
+- [Agent Memory](#agent-memory) — includes startup checklists; see also `AGENT_STARTUP.md`
 - [Multi-Agent Dialogue — Standups and Discussion Threads](#multi-agent-dialogue--standups-and-discussion-threads)
 - [Backlog Growth Process](#backlog-growth-process)
 - [Agent Skills](#agent-skills)
@@ -280,7 +280,7 @@ For complex engine or console changes, a third gate applies:
 [openclaw-mission-control](https://github.com/abhi1693/openclaw-mission-control) is a purpose-built
 dashboard for running OpenClaw at team scale. It provides a Kanban board, structured task dispatch,
 real-time agent monitoring, and built-in approval flows on top of the OpenClaw gateway. It runs as
-a Next.js application (port 4000), connects to the OpenClaw gateway via WebSocket (port 18789),
+a Next.js application (port 8000), connects to the OpenClaw gateway via WebSocket (port 18789),
 persists state in SQLite, and deploys as a Docker container alongside OpenClaw.
 
 ### Setup
@@ -288,7 +288,7 @@ persists state in SQLite, and deploys as a Docker container alongside OpenClaw.
 - Mission Control runs as an additional Docker container added to `compose.yaml`
 - A bearer token (`LOCAL_AUTH_TOKEN`, minimum 50 characters) links it to the OpenClaw gateway
 - The board hierarchy is configured once in the MC UI: **IDEA org → Board Groups (Engineering, HQ) → Boards per agent or project → Tasks**
-- Accessible at `https://openclaw-pi.tail2d60.ts.net:4000`
+- Accessible at `https://openclaw-pi.tail2d60.ts.net:8000`
 
 The rest of the setup is unaffected: `openclaw.json`, `AGENTS.md` files, sandbox files, and the HQ directory structure on disk are unchanged.
 
@@ -353,7 +353,7 @@ Agents read `BACKLOG.md` at session start via HEARTBEAT.md. It is versioned and 
 | **Terminal (SSH / Tailscale SSH)** | Pi administration, Docker, logs | Occasional |
 | **OpenClaw Control UI** | Low-level fallback if Mission Control is unavailable | Rarely |
 
-Access Mission Control at `https://openclaw-pi.tail2d60.ts.net:4000`. OpenClaw Control UI at `https://openclaw-pi.tail2d60.ts.net`.
+Access Mission Control at `https://openclaw-pi.tail2d60.ts.net:8000`. OpenClaw Control UI at `https://openclaw-pi.tail2d60.ts.net`.
 
 ### Using Mission Control + Agent Tabs
 
@@ -616,6 +616,54 @@ The same principle applies to shared knowledge. New facts about the product go i
 accumulates silently.
 
 **Session logs** (`memory/YYYY-MM-DD.md` and `MEMORY.md` in each workspace) are committed to git alongside `outputs/`. Together they form the permanent record: `outputs/` holds the substantive responses; `memory/` holds the agent's running operational notes and durable decisions.
+
+---
+
+### How agents load context at session start
+
+See **`AGENT_STARTUP.md`** at the org root for the full reference. Summary:
+
+**Two mechanisms exist:**
+
+**1. Auto-injected by OpenClaw** — content is in context before the first message; the agent does not call `read`:
+
+| File | Purpose |
+|------|---------|
+| `AGENTS.md` | Operating instructions, startup checklist, role definition |
+| `SOUL.md` | Persona, tone, and boundaries |
+| `USER.md` | Who the user is and how to address them |
+| `IDENTITY.md` | Agent name, vibe, and emoji |
+| `TOOLS.md` | Local tool notes and API credentials |
+| `HEARTBEAT.md` | Checklist for heartbeat polling runs |
+| `BOOTSTRAP.md` | First-run setup ritual (first session only, then deleted) |
+
+Limits: 20,000 chars per file; 150,000 chars total across all files (silent truncation). Use `/context list` in any session to inspect sizes and truncation status.
+
+⚠️ **Do not list `SOUL.md`, `USER.md`, or `IDENTITY.md` in any agent's startup checklist** — they are already in context. Listing them wastes tokens.
+
+**2. Explicitly read by the agent** — the agent calls `read` on startup, instructed to do so by `AGENTS.md`:
+
+| File | Read by |
+|------|---------|
+| `../../CONTEXT.md` | All agents — every session |
+| `../../BACKLOG.md` | All agents |
+| `memory/YYYY-MM-DD.md` (today + yesterday) | All agents |
+| `MEMORY.md` | Researcher only (main session) |
+| `CLAUDE.md` | Engine Dev, Researcher |
+| `docs/SOLUTION_DESCRIPTION.md` | Engine Dev |
+| `../../standups/` (latest) | Quality Manager, Programme Manager |
+| `../../design/` (relevant docs) | Console Dev |
+
+**Per-agent startup checklists:**
+
+| Agent | Reads at session start |
+|-------|----------------------|
+| **Axle** | `CONTEXT.md` · `SOLUTION_DESCRIPTION.md` · `CLAUDE.md` · `BACKLOG.md` · `memory/` |
+| **Pixel** | `CONTEXT.md` · `BACKLOG.md` · `memory/` · `design/` (before feature work) |
+| **Beacon** | `CONTEXT.md` · `BACKLOG.md` · `content-drafts/` · `memory/` |
+| **Veri** | `CONTEXT.md` · `BACKLOG.md` · `standups/` (latest) · open PRs · `memory/` |
+| **Marco** | `CONTEXT.md` · `BACKLOG.md` · `standups/` (latest) · `memory/` |
+| **Compass** | `CONTEXT.md` · `CLAUDE.md` · `research/openclaw-initial-config/virtual-company-design.md` · `memory/` · `MEMORY.md` (main session only) |
 
 ---
 
@@ -1019,7 +1067,7 @@ Total: **8 repos** — 1 org root + 5 operational agent repos + 1 researcher rep
 - [ ] Migrate existing backlog items from BACKLOG.md into Mission Control
 - [ ] BOOTSTRAP sessions for all new agents
 - [x] Define OpenClaw cron and heartbeat schedule for all agents: morning standup seed, BACKLOG.md export, and per-agent heartbeat intervals and active hours
-- [ ] Compass session context: update `AGENTS.md` for researcher to read `CLAUDE.md` and `research/openclaw-initial-config/virtual-company-design.md` at every session start — currently these are not auto-loaded; requires either (a) enabling elevated permissions for Compass from Telegram (`agents.list[].tools.elevated.allowFrom.telegram`) so it can self-edit its own AGENTS.md, or (b) CEO edits the file directly on the Pi
+- [ ] Compass session context: update `AGENTS.md` for researcher to read `CLAUDE.md` and `research/openclaw-initial-config/virtual-company-design.md` at every session start — currently these are not auto-loaded; requires either (a) enabling elevated permissions for Compass from Telegram (`agents.list[].tools.elevated.allowFrom.telegram`) so it can self-edit its own AGENTS.md, or (b) CEO edits the file directly on the Pi. Correct startup checklist is documented in `AGENT_STARTUP.md` and in the Agent Memory section of this doc.
 
 ### app-openclaw / Platform
 - [ ] **Test first:** validate permanently attached USB SSD as system disk — provision a trivial app with `build-app-instance`, reboot, confirm instance auto-starts; if not, submit Engine PR to process existing `/dev/engine` devices on startup
