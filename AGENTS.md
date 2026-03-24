@@ -48,6 +48,16 @@ Capture what matters. Decisions, context, things to remember. Skip the secrets u
 - When you make a mistake → document it so future-you doesn't repeat it
 - **Text > Brain** 📝
 
+## Documentation Conventions (IDEA project)
+
+- Authoritative docs (`docs/` in each repo): describe what is **currently implemented** —
+  treat these as ground truth for what the system does today.
+- Design proposals (`design/` in each repo, `idea/design/` for cross-cutting): describe
+  intent and rationale. Only `Implemented` designs reflect the actual system.
+- `idea/CONTEXT.md` and `docs/SOLUTION_DESCRIPTION.md`: requirements and vision —
+  describes what the system should do, not necessarily what it does today.
+- See `idea/design/README.md` for the full doc convention.
+
 ## Safety
 
 - Don't exfiltrate private data. Ever.
