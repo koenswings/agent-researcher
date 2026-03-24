@@ -1067,7 +1067,7 @@ Total: **8 repos** — 1 org root + 5 operational agent repos + 1 researcher rep
 - [ ] Migrate existing backlog items from BACKLOG.md into Mission Control
 - [ ] BOOTSTRAP sessions for all new agents
 - [x] Define OpenClaw cron and heartbeat schedule for all agents: morning standup seed, BACKLOG.md export, and per-agent heartbeat intervals and active hours
-- [ ] Compass session context: update `AGENTS.md` for researcher to read `CLAUDE.md` and `research/openclaw-initial-config/virtual-company-design.md` at every session start — currently these are not auto-loaded; requires either (a) enabling elevated permissions for Compass from Telegram (`agents.list[].tools.elevated.allowFrom.telegram`) so it can self-edit its own AGENTS.md, or (b) CEO edits the file directly on the Pi. Correct startup checklist is documented in the Agent Memory section of this doc.
+- [x] Compass session context: `AGENTS.md` updated to read `CLAUDE.md` and `virtual-company-design.md` at every session start. Correct startup checklist documented in Agent Memory section of this doc.
 
 ### app-openclaw / Platform
 - [ ] **Test first:** validate permanently attached USB SSD as system disk — provision a trivial app with `build-app-instance`, reboot, confirm instance auto-starts; if not, submit Engine PR to process existing `/dev/engine` devices on startup
