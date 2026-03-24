@@ -196,7 +196,7 @@ Every agent repo contains a full set of identity files at the repo root:
 | `HEARTBEAT.md` | External event polling checklist (disabled by default) |
 | `BOOTSTRAP.md` | First-session setup guide — deleted after first run |
 
-All identity files are committed to git and version-controlled. For branch-protected repos (`agent-engine-dev`, `agent-console-dev`, `agent-site-dev`, `agent-quality-manager`, `agent-programme-manager`), identity file updates go through a PR — opened by Compass and self-merged by the CEO (no approvals required; `required_approving_review_count: 0`). The `agent-researcher` repo is unprotected; Compass pushes identity changes directly.
+All identity files are committed to git and version-controlled. All six repos are branch-protected (`required_approving_review_count: 0`, `enforce_admins: true`). Identity file updates go through a PR — opened by the agent and merged by the CEO (no approvals required; PRs serve as the audit trail).
 
 The `memory/` folder (`MEMORY.md` + daily logs) is committed to git — it is part of the permanent record of each agent's operational history.
 
@@ -616,6 +616,14 @@ The same principle applies to shared knowledge. New facts about the product go i
 accumulates silently.
 
 **Session logs** (`memory/YYYY-MM-DD.md` and `MEMORY.md` in each workspace) are committed to git alongside `outputs/`. Together they form the permanent record: `outputs/` holds the substantive responses; `memory/` holds the agent's running operational notes and durable decisions.
+
+### Memory commit workflow
+
+All repos are branch-protected — no direct pushes to `main`. Memory updates flow through a persistent branch (`memory/updates`): the agent pushes each session's memory files there; a single long-lived PR stays open on GitHub accumulating commits. The CEO merges whenever they want to review what has been logged. After a merge, the agent opens a fresh `memory/updates` branch.
+
+This keeps memory visible and reviewable without generating PR noise. The CEO sees all memory updates in one place and merges on their own schedule.
+
+**Future improvement — auto-merge for memory-only PRs:** A GitHub Actions workflow (`.github/workflows/auto-merge-memory.yml`) can detect when a PR touches only `memory/` paths and merge it automatically — no CEO action required. Requires one manual PR to add the workflow file; thereafter all memory PRs merge without friction. Deferred until the value of manual memory review is confirmed.
 
 ---
 
