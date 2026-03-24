@@ -21,6 +21,7 @@ This document describes how OpenClaw is configured to run the IDEA virtual compa
 - [WhatsApp — Outbound Agent Communication](#whatsapp--outbound-agent-communication)
 - [Scheduling and Autonomous Behaviour](#scheduling-and-autonomous-behaviour)
 - [Agent Memory](#agent-memory) — includes startup checklists and the two loading mechanisms
+- [Documentation Conventions](#documentation-conventions) — authoritative docs vs design proposals, status vocabulary, implementation rule
 - [Multi-Agent Dialogue — Standups and Discussion Threads](#multi-agent-dialogue--standups-and-discussion-threads)
 - [Backlog Growth Process](#backlog-growth-process)
 - [Agent Skills](#agent-skills)
@@ -672,6 +673,58 @@ Limits: 20,000 chars per file; 150,000 chars total across all files (silent trun
 | **Veri** | `CONTEXT.md` · `BACKLOG.md` · `standups/` (latest) · open PRs · `memory/` |
 | **Marco** | `CONTEXT.md` · `BACKLOG.md` · `standups/` (latest) · `memory/` |
 | **Compass** | `CONTEXT.md` · `CLAUDE.md` · `research/openclaw-initial-config/virtual-company-design.md` · `memory/` · `MEMORY.md` (main session only) |
+
+---
+
+## Documentation Conventions
+
+Two categories of documentation exist across all repos. Every agent must understand the
+distinction to avoid treating intent as fact.
+
+### Two doc categories
+
+| Category | Location | Describes | Tense | Updated when |
+|---|---|---|---|---|
+| **Authoritative docs** | `docs/` in each repo | The system as implemented | Present only | With every relevant code change (same PR) |
+| **Design proposals** | `design/` in each repo; `idea/design/` for cross-cutting | Intent, rationale, alternatives considered | Future / intent | Status field only, after CEO approval |
+
+`idea/CONTEXT.md` and `docs/SOLUTION_DESCRIPTION.md` are a third kind: requirements and
+vision documents. They describe what the system should eventually do, not necessarily what
+it does today.
+
+**Key rule:** Authoritative docs are truth. They contain only what is implemented — no
+`[planned]` sections, no future-tense descriptions. If it is not built, it is not in
+`docs/`. Design docs cover intent. The two together give the complete picture.
+
+### Design doc status vocabulary
+
+| Status | Meaning |
+|---|---|
+| `Draft` | Being written; not yet submitted for review |
+| `Proposed` | PR open; awaiting CEO decision |
+| `Approved` | CEO merged PR; implementation authorised |
+| `Implemented` | Feature complete; authoritative docs updated |
+| `Rejected` | CEO decided not to proceed; rationale noted in doc |
+| `Superseded` | A different design was chosen; link to the winning doc |
+| `Withdrawn` | Proposing agent retracted before CEO decision |
+
+Rejected and superseded docs are **never deleted** — they are the historical record of why
+the system is the way it is. A one-sentence rationale in the status field is sufficient.
+
+### Implementation rule
+
+When a PR implements a design, the **same PR** must:
+1. Update the relevant authoritative doc to reflect what was actually built
+2. Update the design doc status to `Implemented`
+
+Veri (Quality Manager) verifies both as part of every PR review.
+
+### Where design docs live
+
+- **Repo-local** (`agents/<repo>/design/`): designs that concern a single component
+- **Org-level** (`idea/design/`): designs that affect more than one repo
+
+See `idea/design/README.md` for the full convention and index.
 
 ---
 
