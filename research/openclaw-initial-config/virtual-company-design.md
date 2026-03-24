@@ -1009,6 +1009,7 @@ Total: **8 repos** — 1 org root + 5 operational agent repos + 1 researcher rep
 - [ ] Design standup template (`standups/TEMPLATE.md`) and enhance `./standup` script: seed file with context, support @-mention scanning after each agent pass
 - [ ] Write `scripts/export-backlog.sh` — queries MC REST API, generates BACKLOG.md
 - [x] Rename repos under `koenswings`: `engine` → `agent-engine-dev`, `openclaw` → `app-openclaw`, `console` → `agent-console-dev`
+- [ ] Initialise `idea/` as a git repo on the host: `cd /home/pi/idea && git init && git remote add origin <url>` — currently `/home/pi/idea` has no `.git` folder; the Docker mount therefore exposes no git context to agents, so `skills/` and org root changes cannot be committed from within the container
 - [ ] Create GitHub organisation (once name decided); transfer all repos; create new repos: `idea`, `agent-site-dev`, `agent-quality-manager`, `agent-programme-manager`
 - [x] Create new agent workspace directories under `agents/`; initialise from GitHub (agent-console-dev, agent-site-dev, agent-quality-manager, agent-programme-manager)
 - [x] Configure OpenClaw agents in `openclaw.json`: rename existing entries, add new agents, update all workspace paths to `/home/node/workspace/agents/agent-<role>`
@@ -1018,6 +1019,7 @@ Total: **8 repos** — 1 org root + 5 operational agent repos + 1 researcher rep
 - [ ] Migrate existing backlog items from BACKLOG.md into Mission Control
 - [ ] BOOTSTRAP sessions for all new agents
 - [ ] Define OpenClaw cron and heartbeat schedule for all agents: morning standup seed, BACKLOG.md export, and per-agent heartbeat intervals and active hours
+- [ ] Compass session context: update `AGENTS.md` for researcher to read `CLAUDE.md` and `research/openclaw-initial-config/virtual-company-design.md` at every session start — currently these are not auto-loaded; requires either (a) enabling elevated permissions for Compass from Telegram (`agents.list[].tools.elevated.allowFrom.telegram`) so it can self-edit its own AGENTS.md, or (b) CEO edits the file directly on the Pi
 
 ### app-openclaw / Platform
 - [ ] **Test first:** validate permanently attached USB SSD as system disk — provision a trivial app with `build-app-instance`, reboot, confirm instance auto-starts; if not, submit Engine PR to process existing `/dev/engine` devices on startup
