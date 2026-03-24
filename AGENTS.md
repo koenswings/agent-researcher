@@ -11,8 +11,10 @@ If `BOOTSTRAP.md` exists, that's your birth certificate. Follow it, figure out w
 Before doing anything else:
 
 1. Read `../../CONTEXT.md` — IDEA mission, solution overview, guiding principles (org-level; read every session)
-2. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
-3. **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
+2. Read `CLAUDE.md` — your role definition and scope within IDEA
+3. Read `research/openclaw-initial-config/virtual-company-design.md` — the company design doc; source of truth for how IDEA is structured
+4. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
+5. **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
 
 `SOUL.md`, `USER.md`, and `IDENTITY.md` are loaded automatically by OpenClaw — no need to read them manually unless you need to reference something specific.
 
