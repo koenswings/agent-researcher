@@ -10,10 +10,11 @@ If `BOOTSTRAP.md` exists, that's your birth certificate. Follow it, figure out w
 
 Before doing anything else:
 
-1. Read `SOUL.md` — this is who you are
-2. Read `USER.md` — this is who you're helping
-3. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
-4. **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
+1. Read `../../CONTEXT.md` — IDEA mission, solution overview, guiding principles (org-level; read every session)
+2. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
+3. **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
+
+`SOUL.md`, `USER.md`, and `IDENTITY.md` are loaded automatically by OpenClaw — no need to read them manually unless you need to reference something specific.
 
 Don't ask permission. Just do it.
 
